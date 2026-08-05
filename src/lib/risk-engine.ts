@@ -171,7 +171,6 @@ export const INDUSTRY_RISK: Record<string, number> = {
   "Digital Content & Media": 3,
   "Online Education": 3,
   "Travel & Tourism": 4,
-  Ticketing2: 4,
   "Events & Ticketing": 4,
   "Health & Wellness": 3,
   Supplements: 4,
