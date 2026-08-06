@@ -157,7 +157,7 @@ const INDUSTRY_OPTIONS = INDUSTRY_CATALOG.map((i) =>
     ? i.name
     : `${i.name} — ${i.status === "prohibited" ? "Prohibited" : "Restricted"}`,
 );
-const optionToIndustry = (v: string) => v.split(" — ")[0];
+const optionToIndustry = (v: string) => v.split(" — ")[0] ?? v;
 const industryToOption = (name: string) => {
   const def = industryDef(name);
   return def.status === "allowed"
