@@ -320,20 +320,38 @@ function MerchantDetail() {
               <p className="label-caps">Legitimacy</p>
               <p className="mt-1 text-sm font-semibold text-risk-low">{r.legitimacy_status}</p>
               <div className="mt-4">
+                <Row label="Email" value={m.merchant_email || "—"} />
+                <Row label="Website" value={m.merchant_website || "—"} />
+                <Row label="Email fraud score" value={m.email_fraud_score} />
+                <Row label="IP fraud score" value={m.ip_fraud_score} />
+                <Row label="Industry" value={m.industry} />
                 <Row label="Product type" value={m.product_type} />
-                <Row label="Refundability" value={m.refundability} />
                 <Row label="Delivery" value={m.delivery_type} />
                 <Row label="Avg order value" value={m.avg_order_value} />
                 <Row label="Business model" value={m.business_model} />
-                <Row label="Seller controls" value={m.seller_controls} />
                 <Row label="Payment flow" value={m.payment_flow} />
-                <Row label="Fulfilment" value={m.fulfilment} />
                 <Row label="Processing history" value={m.processing_history} />
                 <Row label="Maturity" value={m.business_maturity} />
                 <Row label="Chargeback rate" value={`${m.chargeback_rate}%`} />
                 <Row label="Fraud rate" value={`${m.fraud_rate}%`} />
                 <Row label="Refund rate" value={`${m.refund_rate}%`} />
               </div>
+            </section>
+
+            <section className="panel p-6">
+              <p className="label-caps">Tickets & notes</p>
+              <div className="mt-3">
+                {m.tickets.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No tickets linked.</p>
+                ) : (
+                  m.tickets.map((t) => (
+                    <Row key={t.id} label={t.reference || "Ticket"} value={t.summary || "—"} />
+                  ))
+                )}
+              </div>
+              <p className="mt-4 text-sm whitespace-pre-wrap text-muted-foreground">
+                {m.internal_notes || "No internal notes."}
+              </p>
             </section>
 
             <section className="panel p-6">
