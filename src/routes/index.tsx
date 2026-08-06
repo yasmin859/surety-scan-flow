@@ -83,12 +83,12 @@ function Dashboard() {
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Merchants assessed" value={list.length} />
         <Stat label="Average risk score" value={avg} />
-        <Stat label="High risk (Orange + Red)" value={counts.ORANGE + counts.RED} tone="text-risk-orange" />
-        <Stat label="Legitimacy rejections" value={rejected.length} tone="text-risk-red" />
+        <Stat label="High risk" value={counts.HIGH} tone="text-risk-red" />
+        <Stat label="Rejected" value={rejected.length} tone="text-muted-foreground" />
       </div>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-4">
-        {(["LOW", "MEDIUM", "ORANGE", "RED"] as Category[]).map((c) => (
+        {(["LOW", "MEDIUM", "HIGH", "REJECTED"] as Category[]).map((c) => (
           <div key={c} className="panel flex items-center justify-between p-4">
             <RiskBadge category={c} size="sm" />
             <span className="font-mono text-xl font-semibold">{counts[c]}</span>
