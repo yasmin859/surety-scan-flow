@@ -4,12 +4,9 @@
  */
 
 export type ProductType = "Physical" | "Digital" | "Subscription";
-export type Refundability = "Easy" | "Moderate" | "Difficult";
 export type DeliveryType = "Instant" | "Delayed";
-export type BusinessModel = "Direct" | "Marketplace" | "Aggregator" | "Dropshipping";
-export type SellerControls = "Strong" | "Moderate" | "Weak";
+export type BusinessModel = "Ecommerce" | "Marketplace" | "Wayflyer Referral" | "StoreHero Referral";
 export type PaymentFlow = "Merchant controls funds" | "Third-party controls funds";
-export type Fulfilment = "Merchant fulfils" | "Shared responsibility" | "Third-party fulfils";
 export type ProcessingHistory =
   | "No history"
   | "<6 months"
@@ -17,7 +14,8 @@ export type ProcessingHistory =
   | "1-3 years"
   | "3+ years";
 export type BusinessMaturity = "MVP" | "<1 year" | "1-3 years" | "3+ years";
-export type Category = "LOW" | "MEDIUM" | "ORANGE" | "RED";
+/** Risk levels. Colour is presentation-only: Low = green, Medium = orange, High = red. */
+export type Category = "LOW" | "MEDIUM" | "HIGH" | "REJECTED";
 export type Variance = "ACCURATE" | "FALSE POSITIVE" | "UNDER-ESTIMATED RISK";
 
 export interface CustomerCountry {
@@ -25,25 +23,34 @@ export interface CustomerCountry {
   percentage: number;
 }
 
+export interface MerchantTicket {
+  id: string;
+  reference: string;
+  summary: string;
+}
+
 export interface Merchant {
   name: string;
+  merchant_email: string;
+  merchant_website: string;
   merchant_country: string;
   operating_country: string;
   customer_distribution: CustomerCountry[];
   industry: string;
+  email_fraud_score: number;
+  ip_fraud_score: number;
   product_type: ProductType;
-  refundability: Refundability;
   delivery_type: DeliveryType;
   avg_order_value: number;
   business_model: BusinessModel;
-  seller_controls: SellerControls;
   payment_flow: PaymentFlow;
-  fulfilment: Fulfilment;
   processing_history: ProcessingHistory;
   chargeback_rate: number;
   fraud_rate: number;
   refund_rate: number;
   business_maturity: BusinessMaturity;
+  tickets: MerchantTicket[];
+  internal_notes: string;
 }
 
 export interface Legitimacy {
@@ -76,12 +83,15 @@ export interface Assessment {
     customer_exposure: ComponentScore;
     industry_product: ComponentScore;
     business_model: ComponentScore;
+    fraud_signals: ComponentScore;
     historical: ComponentScore;
     business_maturity: ComponentScore;
   };
   total_score: number;
   category: Category;
   monitoring_days: string;
+  /** Populated when the industry is prohibited/restricted enough to auto-reject. */
+  rejection_reason?: string;
 }
 
 export interface MerchantRecord {
@@ -161,51 +171,89 @@ export const COUNTRY_RISK: Record<string, number> = {
 
 export const COUNTRIES = Object.keys(COUNTRY_RISK).sort();
 
-/** Predefined base industry risk scores. */
-export const INDUSTRY_RISK: Record<string, number> = {
-  "Retail / eCommerce": 2,
-  "Grocery & Food": 1,
-  "Fashion & Apparel": 2,
-  Electronics: 3,
-  "SaaS / Software": 2,
-  "Digital Content & Media": 3,
-  "Online Education": 3,
-  "Travel & Tourism": 4,
-  "Events & Ticketing": 4,
-  "Health & Wellness": 3,
-  Supplements: 4,
-  "Beauty & Cosmetics": 3,
-  "Gaming & eSports": 4,
-  Gambling: 5,
-  "Crypto & Digital Assets": 5,
-  "Financial Services": 4,
-  "Adult Content": 5,
-  "Nutraceuticals / CBD": 5,
-  "Marketplace Services": 3,
-  "Professional Services": 2,
-  "Home & Furniture": 2,
-  Automotive: 3,
-  Telecoms: 3,
-  "Charity / Non-profit": 2,
-};
+/**
+ * Industry catalogue.
+ * `status` follows Stripe's restricted businesses list:
+ * https://stripe.com/ie/legal/restricted-businesses
+ *  - "prohibited": never onboard → automatic Rejected
+ *  - "restricted": conditional / high-risk → automatic Rejected pending approval
+ *  - "allowed": scored normally
+ */
+export type IndustryStatus = "allowed" | "restricted" | "prohibited";
 
-export const INDUSTRIES = Object.keys(INDUSTRY_RISK).sort();
+export interface IndustryDef {
+  name: string;
+  risk: number;
+  status: IndustryStatus;
+}
+
+export const INDUSTRY_CATALOG: IndustryDef[] = [
+  { name: "Retail / eCommerce", risk: 2, status: "allowed" },
+  { name: "Grocery & Food", risk: 1, status: "allowed" },
+  { name: "Fashion & Apparel", risk: 2, status: "allowed" },
+  { name: "Electronics", risk: 3, status: "allowed" },
+  { name: "SaaS / Software", risk: 2, status: "allowed" },
+  { name: "Digital Content & Media", risk: 3, status: "allowed" },
+  { name: "Online Education", risk: 3, status: "allowed" },
+  { name: "Travel & Tourism", risk: 4, status: "allowed" },
+  { name: "Events & Ticketing", risk: 4, status: "allowed" },
+  { name: "Health & Wellness", risk: 3, status: "allowed" },
+  { name: "Beauty & Cosmetics", risk: 3, status: "allowed" },
+  { name: "Home & Furniture", risk: 2, status: "allowed" },
+  { name: "Automotive", risk: 3, status: "allowed" },
+  { name: "Telecoms", risk: 3, status: "allowed" },
+  { name: "Professional Services", risk: 2, status: "allowed" },
+  { name: "Marketplace Services", risk: 3, status: "allowed" },
+  { name: "Charity / Non-profit", risk: 2, status: "allowed" },
+  // Stripe restricted / conditional categories
+  { name: "Supplements & Nutraceuticals", risk: 4, status: "restricted" },
+  { name: "CBD & Hemp Products", risk: 5, status: "restricted" },
+  { name: "Gambling & Betting", risk: 5, status: "restricted" },
+  { name: "Crypto & Digital Assets", risk: 5, status: "restricted" },
+  { name: "Financial Services / Lending", risk: 4, status: "restricted" },
+  { name: "Adult Content", risk: 5, status: "restricted" },
+  { name: "Gaming & eSports (real money)", risk: 4, status: "restricted" },
+  { name: "Tobacco, E-cigarettes & Vapes", risk: 5, status: "restricted" },
+  { name: "Alcohol", risk: 4, status: "restricted" },
+  { name: "Firearms, Weapons & Ammunition", risk: 5, status: "restricted" },
+  { name: "Pharmaceuticals & Prescription Drugs", risk: 5, status: "restricted" },
+  { name: "Debt Collection & Credit Repair", risk: 5, status: "restricted" },
+  // Stripe prohibited categories
+  { name: "Illegal Drugs & Paraphernalia", risk: 5, status: "prohibited" },
+  { name: "Counterfeit & IP-infringing Goods", risk: 5, status: "prohibited" },
+  { name: "Multi-level Marketing / Pyramid Schemes", risk: 5, status: "prohibited" },
+  { name: "Get-rich-quick Schemes", risk: 5, status: "prohibited" },
+  { name: "Human Trafficking & Exploitation", risk: 5, status: "prohibited" },
+  { name: "Endangered Species & Protected Wildlife", risk: 5, status: "prohibited" },
+  { name: "Unlicensed Money Transmission", risk: 5, status: "prohibited" },
+  { name: "Shell Banks & Unregistered Charities", risk: 5, status: "prohibited" },
+];
+
+export const INDUSTRIES = INDUSTRY_CATALOG.map((i) => i.name);
+
+export function industryDef(name: string): IndustryDef {
+  return INDUSTRY_CATALOG.find((i) => i.name === name) ?? { name, risk: 3, status: "allowed" };
+}
+
+export const STRIPE_RESTRICTED_URL = "https://stripe.com/ie/legal/restricted-businesses";
 
 export const WEIGHTS = {
-  merchant_country: 0.18,
-  customer_exposure: 0.27,
-  industry_product: 0.23,
-  business_model: 0.14,
+  merchant_country: 0.16,
+  customer_exposure: 0.22,
+  industry_product: 0.2,
+  business_model: 0.12,
+  fraud_signals: 0.12,
   historical: 0.08,
   business_maturity: 0.1,
 } as const;
 
-/** Thresholds used for "high" flags in historical & AOV scoring. */
+/** Thresholds used for "high" flags in historical, AOV and fraud-signal scoring. */
 export const THRESHOLDS = {
   chargeback_high: 0.9, // %
   fraud_high: 0.5, // %
   refund_high: 8, // %
   aov_high: 250, // currency units
+  fraud_signal_high: 80, // email/IP fraud score
 };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -233,6 +281,27 @@ export function checkLegitimacy(l: Legitimacy): { passed: boolean; status: strin
   return failures.length > 0
     ? { passed: false, status: "REJECTED - LEGITIMACY FAILURE", failures }
     : { passed: true, status: "PASSED - LEGITIMACY VERIFIED", failures };
+}
+
+/* ------------------------------------------------------------------ */
+/* Industry gate                                                       */
+/* ------------------------------------------------------------------ */
+
+export function checkIndustry(industry: string): { rejected: boolean; reason?: string } {
+  const def = industryDef(industry);
+  if (def.status === "prohibited") {
+    return {
+      rejected: true,
+      reason: `Prohibited industry (${def.name}) under Stripe restricted businesses policy.`,
+    };
+  }
+  if (def.status === "restricted") {
+    return {
+      rejected: true,
+      reason: `Restricted industry (${def.name}) under Stripe restricted businesses policy — requires explicit approval.`,
+    };
+  }
+  return { rejected: false };
 }
 
 /* ------------------------------------------------------------------ */
@@ -292,10 +361,18 @@ function scoreCustomerExposure(m: Merchant): ComponentScore {
 /* ------------------------------------------------------------------ */
 
 function scoreIndustryProduct(m: Merchant): ComponentScore {
-  const base = INDUSTRY_RISK[m.industry] ?? 3;
-  const lines: ScoreLine[] = [{ label: `Base industry risk (${m.industry})`, value: base }];
-  let score = base;
+  const def = industryDef(m.industry);
+  const lines: ScoreLine[] = [{ label: `Base industry risk (${def.name})`, value: def.risk }];
+  let score = def.risk;
 
+  if (def.status === "restricted") {
+    score += 1;
+    lines.push({ label: "Stripe restricted category", value: 1 });
+  }
+  if (def.status === "prohibited") {
+    score += 2;
+    lines.push({ label: "Stripe prohibited category", value: 2 });
+  }
   if (m.product_type === "Digital") {
     score += 0.5;
     lines.push({ label: "Digital product", value: 0.5 });
@@ -303,10 +380,6 @@ function scoreIndustryProduct(m: Merchant): ComponentScore {
   if (m.product_type === "Subscription") {
     score += 0.5;
     lines.push({ label: "Subscription product", value: 0.5 });
-  }
-  if (m.refundability === "Difficult") {
-    score += 0.5;
-    lines.push({ label: "Difficult refundability", value: 0.5 });
   }
   if (m.delivery_type === "Instant") {
     score += 0.3;
@@ -332,28 +405,51 @@ function scoreBusinessModel(m: Merchant): ComponentScore {
     score += 1;
     lines.push({ label: "Marketplace model", value: 1 });
   }
-  if (m.business_model === "Dropshipping") {
-    score += 0.5;
-    lines.push({ label: "Dropshipping model", value: 0.5 });
-  }
-  if (m.seller_controls === "Weak") {
-    score += 0.5;
-    lines.push({ label: "Weak seller controls", value: 0.5 });
+  if (m.business_model === "Wayflyer Referral" || m.business_model === "StoreHero Referral") {
+    score -= 0.5;
+    lines.push({ label: `Vetted partner referral (${m.business_model})`, value: -0.5 });
   }
   if (m.payment_flow === "Third-party controls funds") {
     score += 0.5;
     lines.push({ label: "Third-party controls funds", value: 0.5 });
-  }
-  if (m.fulfilment === "Third-party fulfils") {
-    score += 0.5;
-    lines.push({ label: "Third-party fulfils", value: 0.5 });
   }
 
   return { score: round2(clamp(score, 1, 5)), lines };
 }
 
 /* ------------------------------------------------------------------ */
-/* 4.5 Historical performance                                          */
+/* 4.5 IP & email quality signals                                      */
+/* ------------------------------------------------------------------ */
+
+/** Maps a 0-100 fraud score proportionally onto the 1-5 risk band. */
+function signalScore(v: number): number {
+  return 1 + (clamp(v, 0, 100) / 100) * 4;
+}
+
+function scoreFraudSignals(m: Merchant): ComponentScore {
+  const email = clamp(Number(m.email_fraud_score) || 0, 0, 100);
+  const ip = clamp(Number(m.ip_fraud_score) || 0, 0, 100);
+  const base = (signalScore(email) + signalScore(ip)) / 2;
+
+  const lines: ScoreLine[] = [
+    { label: `Email fraud score ${email} / IP fraud score ${ip} (proportional)`, value: round2(base) },
+  ];
+  let score = base;
+
+  if (email > THRESHOLDS.fraud_signal_high) {
+    score += 0.5;
+    lines.push({ label: `Email fraud score above ${THRESHOLDS.fraud_signal_high}`, value: 0.5 });
+  }
+  if (ip > THRESHOLDS.fraud_signal_high) {
+    score += 0.5;
+    lines.push({ label: `IP fraud score above ${THRESHOLDS.fraud_signal_high}`, value: 0.5 });
+  }
+
+  return { score: round2(clamp(score, 1, 5)), lines };
+}
+
+/* ------------------------------------------------------------------ */
+/* 4.6 Historical performance                                          */
 /* ------------------------------------------------------------------ */
 
 function scoreHistorical(m: Merchant): ComponentScore {
@@ -391,7 +487,7 @@ function scoreHistorical(m: Merchant): ComponentScore {
 }
 
 /* ------------------------------------------------------------------ */
-/* 4.6 Business maturity                                               */
+/* 4.7 Business maturity                                               */
 /* ------------------------------------------------------------------ */
 
 const MATURITY_SCORE: Record<BusinessMaturity, number> = {
@@ -412,16 +508,22 @@ function scoreMaturity(m: Merchant): ComponentScore {
 
 export function categorise(score: number): Category {
   if (score <= 2.0) return "LOW";
-  if (score <= 3.0) return "MEDIUM";
-  if (score <= 4.0) return "ORANGE";
-  return "RED";
+  if (score <= 3.2) return "MEDIUM";
+  return "HIGH";
 }
 
 export const MONITORING: Record<Category, string> = {
   LOW: "21 days",
   MEDIUM: "60 days",
-  ORANGE: "90-120 days",
-  RED: "120+ days + strict monitoring",
+  HIGH: "120+ days + strict monitoring",
+  REJECTED: "Not applicable",
+};
+
+export const CATEGORY_LABEL: Record<Category, string> = {
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+  REJECTED: "Rejected",
 };
 
 export function runAssessment(m: Merchant): Assessment {
@@ -430,6 +532,7 @@ export function runAssessment(m: Merchant): Assessment {
     customer_exposure: scoreCustomerExposure(m),
     industry_product: scoreIndustryProduct(m),
     business_model: scoreBusinessModel(m),
+    fraud_signals: scoreFraudSignals(m),
     historical: scoreHistorical(m),
     business_maturity: scoreMaturity(m),
   };
@@ -439,19 +542,28 @@ export function runAssessment(m: Merchant): Assessment {
       scores.customer_exposure.score * WEIGHTS.customer_exposure +
       scores.industry_product.score * WEIGHTS.industry_product +
       scores.business_model.score * WEIGHTS.business_model +
+      scores.fraud_signals.score * WEIGHTS.fraud_signals +
       scores.historical.score * WEIGHTS.historical +
       scores.business_maturity.score * WEIGHTS.business_maturity,
   );
 
-  const category = categorise(total);
-  return { scores, total_score: total, category, monitoring_days: MONITORING[category] };
+  const industryGate = checkIndustry(m.industry);
+  const category: Category = industryGate.rejected ? "REJECTED" : categorise(total);
+
+  return {
+    scores,
+    total_score: total,
+    category,
+    monitoring_days: MONITORING[category],
+    ...(industryGate.reason ? { rejection_reason: industryGate.reason } : {}),
+  };
 }
 
 /* ------------------------------------------------------------------ */
 /* Stage 2 — observed behaviour                                        */
 /* ------------------------------------------------------------------ */
 
-const CATEGORY_RANK: Record<Category, number> = { LOW: 1, MEDIUM: 2, ORANGE: 3, RED: 4 };
+const CATEGORY_RANK: Record<Category, number> = { REJECTED: 0, LOW: 1, MEDIUM: 2, HIGH: 3 };
 
 /** Derives an observed risk category from live monitoring metrics. */
 export function observedCategory(a: ActualMetrics): Category {
@@ -470,8 +582,7 @@ export function observedCategory(a: ActualMetrics): Category {
 
   if (points === 0) return "LOW";
   if (points <= 2) return "MEDIUM";
-  if (points <= 4) return "ORANGE";
-  return "RED";
+  return "HIGH";
 }
 
 export function compareStage2(expected: Category, actual: Category): Variance {
@@ -485,8 +596,7 @@ export function compareStage2(expected: Category, actual: Category): Variance {
 /* ------------------------------------------------------------------ */
 
 export function decide(expected: Category, variance: Variance): string {
-  if (expected === "RED" || variance === "UNDER-ESTIMATED RISK") return "ESCALATE / RESTRICT";
-  if (expected === "ORANGE") return "ADJUST TERMS or EXTEND";
-  if ((expected === "LOW" || expected === "MEDIUM") && variance === "ACCURATE") return "STANDARD TERMS";
+  if (expected === "REJECTED") return "REJECTED - NOT ONBOARDED";
+  if (expected === "HIGH" || variance === "UNDER-ESTIMATED RISK") return "ESCALATE / RESTRICT";
   return "STANDARD TERMS";
 }

@@ -1,11 +1,11 @@
-import type { Category, Variance } from "@/lib/risk-engine";
+import { CATEGORY_LABEL, type Category, type Variance } from "@/lib/risk-engine";
 import { cn } from "@/lib/utils";
 
 const CATEGORY_CLASS: Record<Category, string> = {
   LOW: "bg-risk-low/15 text-risk-low border-risk-low/40",
-  MEDIUM: "bg-risk-medium/15 text-risk-medium border-risk-medium/40",
-  ORANGE: "bg-risk-orange/15 text-risk-orange border-risk-orange/40",
-  RED: "bg-risk-red/18 text-risk-red border-risk-red/45",
+  MEDIUM: "bg-risk-orange/15 text-risk-orange border-risk-orange/40",
+  HIGH: "bg-risk-red/18 text-risk-red border-risk-red/45",
+  REJECTED: "bg-muted text-muted-foreground border-border",
 };
 
 export function RiskBadge({
@@ -27,7 +27,7 @@ export function RiskBadge({
       )}
     >
       <span className="size-1.5 rounded-full bg-current" />
-      {category}
+      {CATEGORY_LABEL[category]}
     </span>
   );
 }

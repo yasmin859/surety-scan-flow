@@ -6,6 +6,7 @@ const ROWS: { key: keyof Assessment["scores"]; label: string; weight: number }[]
   { key: "customer_exposure", label: "Customer exposure", weight: WEIGHTS.customer_exposure },
   { key: "industry_product", label: "Industry / product", weight: WEIGHTS.industry_product },
   { key: "business_model", label: "Business model", weight: WEIGHTS.business_model },
+  { key: "fraud_signals", label: "IP & email quality", weight: WEIGHTS.fraud_signals },
   { key: "historical", label: "Historical performance", weight: WEIGHTS.historical },
   { key: "business_maturity", label: "Business maturity", weight: WEIGHTS.business_maturity },
 ];

@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ShieldAlert, ShieldCheck, Ticket, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -18,22 +19,23 @@ import { RiskBadge } from "@/components/risk-badges";
 import { ScoreBreakdown } from "@/components/score-breakdown";
 import {
   COUNTRIES,
-  INDUSTRIES,
+  INDUSTRY_CATALOG,
+  STRIPE_RESTRICTED_URL,
+  checkIndustry,
   checkLegitimacy,
+  industryDef,
   runAssessment,
   type BusinessMaturity,
   type BusinessModel,
   type CustomerCountry,
   type DeliveryType,
-  type Fulfilment,
   type Legitimacy,
   type Merchant,
   type MerchantRecord,
+  type MerchantTicket,
   type PaymentFlow,
   type ProcessingHistory,
   type ProductType,
-  type Refundability,
-  type SellerControls,
 } from "@/lib/risk-engine";
 import { upsertRecord } from "@/lib/records-store";
 
@@ -117,25 +119,50 @@ function SectionCard({
   );
 }
 
+function SubBox({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-border bg-surface-strong/60 p-4">
+      <p className="label-caps mb-3">{title}</p>
+      {children}
+    </div>
+  );
+}
+
 const emptyMerchant: Merchant = {
   name: "",
+  merchant_email: "",
+  merchant_website: "",
   merchant_country: "United Kingdom",
   operating_country: "United Kingdom",
   customer_distribution: [{ country: "United Kingdom", percentage: 100 }],
   industry: "Retail / eCommerce",
+  email_fraud_score: 0,
+  ip_fraud_score: 0,
   product_type: "Physical",
-  refundability: "Easy",
   delivery_type: "Delayed",
   avg_order_value: 60,
-  business_model: "Direct",
-  seller_controls: "Strong",
+  business_model: "Ecommerce",
   payment_flow: "Merchant controls funds",
-  fulfilment: "Merchant fulfils",
   processing_history: "No history",
   chargeback_rate: 0,
   fraud_rate: 0,
   refund_rate: 0,
   business_maturity: "1-3 years",
+  tickets: [],
+  internal_notes: "",
+};
+
+const INDUSTRY_OPTIONS = INDUSTRY_CATALOG.map((i) =>
+  i.status === "allowed"
+    ? i.name
+    : `${i.name} — ${i.status === "prohibited" ? "Prohibited" : "Restricted"}`,
+);
+const optionToIndustry = (v: string) => v.split(" — ")[0] ?? v;
+const industryToOption = (name: string) => {
+  const def = industryDef(name);
+  return def.status === "allowed"
+    ? def.name
+    : `${def.name} — ${def.status === "prohibited" ? "Prohibited" : "Restricted"}`;
 };
 
 function NewAssessment() {
@@ -151,6 +178,7 @@ function NewAssessment() {
   const set = <K extends keyof Merchant>(k: K, v: Merchant[K]) => setM((p) => ({ ...p, [k]: v }));
 
   const gate = useMemo(() => checkLegitimacy(legit), [legit]);
+  const industryGate = useMemo(() => checkIndustry(m.industry), [m.industry]);
   const preview = useMemo(() => (gate.passed ? runAssessment(m) : null), [gate.passed, m]);
 
   const distTotal = m.customer_distribution.reduce((s, c) => s + (Number(c.percentage) || 0), 0);
@@ -163,12 +191,19 @@ function NewAssessment() {
       ),
     }));
 
+  const updateTicket = (id: string, patch: Partial<MerchantTicket>) =>
+    setM((p) => ({
+      ...p,
+      tickets: p.tickets.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+    }));
+
   const submit = () => {
     if (!m.name.trim()) {
       toast.error("Merchant name is required");
       return;
     }
     const assessment = gate.passed ? runAssessment(m) : null;
+    const rejected = !gate.passed || assessment?.category === "REJECTED";
     const record: MerchantRecord = {
       id: crypto.randomUUID(),
       created_at: new Date().toISOString(),
@@ -178,10 +213,14 @@ function NewAssessment() {
       legitimacy_status: gate.status,
       assessment,
       stage2: null,
-      final_decision: gate.passed ? null : "REJECTED - LEGITIMACY FAILURE",
+      final_decision: !gate.passed
+        ? "REJECTED - LEGITIMACY FAILURE"
+        : assessment?.category === "REJECTED"
+          ? "REJECTED - NOT ONBOARDED"
+          : null,
     };
     upsertRecord(record);
-    toast.success(gate.passed ? "Assessment recorded" : "Merchant rejected at legitimacy gate");
+    toast.success(rejected ? "Merchant recorded as Rejected" : "Assessment recorded");
     navigate({ to: "/merchant/$id", params: { id: record.id } });
   };
 
@@ -203,7 +242,7 @@ function NewAssessment() {
 
       <h1 className="mt-4 text-3xl font-bold">New merchant assessment</h1>
       <p className="mt-1 text-muted-foreground">
-        Stage 1 — legitimacy gate, weighted scoring, category and monitoring assignment.
+        Stage 1 — legitimacy gate, weighted scoring, risk level and monitoring assignment.
       </p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
@@ -250,31 +289,104 @@ function NewAssessment() {
           </SectionCard>
 
           <SectionCard step="STEP 2" title="Merchant profile">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Merchant name">
-                <Input
-                  value={m.name}
-                  onChange={(e) => set("name", e.target.value.slice(0, 120))}
-                  placeholder="Acme Commerce Ltd"
-                />
-              </Field>
-              <Field label="Industry">
-                <Picker value={m.industry} onChange={(v) => set("industry", v)} options={INDUSTRIES} />
-              </Field>
-              <Field label="Merchant country">
-                <Picker
-                  value={m.merchant_country}
-                  onChange={(v) => set("merchant_country", v)}
-                  options={COUNTRIES}
-                />
-              </Field>
-              <Field label="Operating country">
-                <Picker
-                  value={m.operating_country}
-                  onChange={(v) => set("operating_country", v)}
-                  options={COUNTRIES}
-                />
-              </Field>
+            <div className="space-y-4">
+              <SubBox title="Merchant details">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Merchant name">
+                    <Input
+                      value={m.name}
+                      onChange={(e) => set("name", e.target.value.slice(0, 120))}
+                      placeholder="Acme Commerce Ltd"
+                    />
+                  </Field>
+                  <Field label="Industry">
+                    <Picker
+                      value={industryToOption(m.industry)}
+                      onChange={(v) => set("industry", optionToIndustry(v))}
+                      options={INDUSTRY_OPTIONS}
+                    />
+                  </Field>
+                  <Field label="Merchant email">
+                    <Input
+                      type="email"
+                      value={m.merchant_email}
+                      onChange={(e) => set("merchant_email", e.target.value.slice(0, 255))}
+                      placeholder="risk@acme.com"
+                    />
+                  </Field>
+                  <Field label="Merchant website">
+                    <Input
+                      value={m.merchant_website}
+                      onChange={(e) => set("merchant_website", e.target.value.slice(0, 255))}
+                      placeholder="https://acme.com"
+                    />
+                  </Field>
+                  <Field label="Merchant country">
+                    <Picker
+                      value={m.merchant_country}
+                      onChange={(v) => set("merchant_country", v)}
+                      options={COUNTRIES}
+                    />
+                  </Field>
+                  <Field label="Operating country">
+                    <Picker
+                      value={m.operating_country}
+                      onChange={(v) => set("operating_country", v)}
+                      options={COUNTRIES}
+                    />
+                  </Field>
+                </div>
+
+                {industryGate.rejected && (
+                  <div className="mt-4 flex items-start gap-3 rounded-lg border border-risk-red/45 bg-risk-red/10 px-4 py-3 text-sm text-risk-red">
+                    <ShieldAlert className="mt-0.5 size-4 shrink-0" />
+                    <div>
+                      <p className="font-semibold">Status set to Rejected</p>
+                      <p className="mt-1 text-xs opacity-90">
+                        {industryGate.reason}{" "}
+                        <a
+                          className="underline"
+                          href={STRIPE_RESTRICTED_URL}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Source of truth
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </SubBox>
+
+              <SubBox title="IP & email quality check">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Email fraud score (0-100)">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={m.email_fraud_score}
+                      onChange={(e) =>
+                        set("email_fraud_score", Math.max(0, Math.min(100, Number(e.target.value) || 0)))
+                      }
+                    />
+                  </Field>
+                  <Field label="IP fraud score (0-100)">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={m.ip_fraud_score}
+                      onChange={(e) =>
+                        set("ip_fraud_score", Math.max(0, Math.min(100, Number(e.target.value) || 0)))
+                      }
+                    />
+                  </Field>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Scores contribute proportionally to risk; anything above 80 adds an extra penalty.
+                </p>
+              </SubBox>
             </div>
           </SectionCard>
 
@@ -336,7 +448,7 @@ function NewAssessment() {
                 Add country
               </Button>
               <span
-                className={`font-mono text-xs ${distTotal === 100 ? "text-muted-foreground" : "text-risk-medium"}`}
+                className={`font-mono text-xs ${distTotal === 100 ? "text-muted-foreground" : "text-risk-orange"}`}
               >
                 total {distTotal}%
               </span>
@@ -350,13 +462,6 @@ function NewAssessment() {
                   value={m.product_type}
                   onChange={(v) => set("product_type", v)}
                   options={["Physical", "Digital", "Subscription"]}
-                />
-              </Field>
-              <Field label="Refundability">
-                <Picker<Refundability>
-                  value={m.refundability}
-                  onChange={(v) => set("refundability", v)}
-                  options={["Easy", "Moderate", "Difficult"]}
                 />
               </Field>
               <Field label="Delivery type">
@@ -378,14 +483,7 @@ function NewAssessment() {
                 <Picker<BusinessModel>
                   value={m.business_model}
                   onChange={(v) => set("business_model", v)}
-                  options={["Direct", "Marketplace", "Aggregator", "Dropshipping"]}
-                />
-              </Field>
-              <Field label="Seller controls">
-                <Picker<SellerControls>
-                  value={m.seller_controls}
-                  onChange={(v) => set("seller_controls", v)}
-                  options={["Strong", "Moderate", "Weak"]}
+                  options={["Ecommerce", "Marketplace", "Wayflyer Referral", "StoreHero Referral"]}
                 />
               </Field>
               <Field label="Payment flow">
@@ -393,13 +491,6 @@ function NewAssessment() {
                   value={m.payment_flow}
                   onChange={(v) => set("payment_flow", v)}
                   options={["Merchant controls funds", "Third-party controls funds"]}
-                />
-              </Field>
-              <Field label="Fulfilment">
-                <Picker<Fulfilment>
-                  value={m.fulfilment}
-                  onChange={(v) => set("fulfilment", v)}
-                  options={["Merchant fulfils", "Shared responsibility", "Third-party fulfils"]}
                 />
               </Field>
             </div>
@@ -453,6 +544,68 @@ function NewAssessment() {
               </Field>
             </div>
           </SectionCard>
+
+          <SectionCard
+            step="STEP 6"
+            title="Tickets & internal notes"
+            subtitle="Internal context only — not part of the weighted score."
+          >
+            <div className="space-y-3">
+              {m.tickets.length === 0 && (
+                <p className="text-sm text-muted-foreground">No tickets linked yet.</p>
+              )}
+              {m.tickets.map((t) => (
+                <div key={t.id} className="flex flex-wrap gap-3">
+                  <Input
+                    className="w-40"
+                    placeholder="Ticket ref"
+                    value={t.reference}
+                    onChange={(e) => updateTicket(t.id, { reference: e.target.value.slice(0, 60) })}
+                  />
+                  <Input
+                    className="min-w-52 flex-1"
+                    placeholder="Ticket context"
+                    value={t.summary}
+                    onChange={(e) => updateTicket(t.id, { summary: e.target.value.slice(0, 300) })}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      setM((p) => ({ ...p, tickets: p.tickets.filter((x) => x.id !== t.id) }))
+                    }
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-4"
+              onClick={() =>
+                setM((p) => ({
+                  ...p,
+                  tickets: [...p.tickets, { id: crypto.randomUUID(), reference: "", summary: "" }],
+                }))
+              }
+            >
+              <Ticket className="size-4" /> Link ticket
+            </Button>
+
+            <div className="mt-5 space-y-2">
+              <Label className="label-caps">Additional comments</Label>
+              <Textarea
+                rows={5}
+                maxLength={2000}
+                placeholder="Ticket context, risk considerations, relevant background…"
+                value={m.internal_notes}
+                onChange={(e) => set("internal_notes", e.target.value.slice(0, 2000))}
+              />
+            </div>
+          </SectionCard>
         </div>
 
         <aside className="lg:sticky lg:top-8 lg:h-fit">
@@ -467,6 +620,9 @@ function NewAssessment() {
                 <p className="mt-2 text-sm text-muted-foreground">
                   Monitoring: <span className="text-foreground">{preview.monitoring_days}</span>
                 </p>
+                {preview.rejection_reason && (
+                  <p className="mt-2 text-xs text-risk-red">{preview.rejection_reason}</p>
+                )}
                 <div className="mt-5 max-h-[46vh] overflow-y-auto pr-1">
                   <ScoreBreakdown assessment={preview} />
                 </div>
@@ -477,7 +633,7 @@ function NewAssessment() {
               </p>
             )}
             <Button className="mt-6 w-full" onClick={submit}>
-              {gate.passed ? "Save assessment" : "Record rejection"}
+              {gate.passed && preview?.category !== "REJECTED" ? "Save assessment" : "Record rejection"}
             </Button>
           </div>
         </aside>
