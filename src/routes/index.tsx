@@ -46,14 +46,15 @@ function Dashboard() {
   }, []);
 
   const list = records ?? [];
-  const scored = list.filter((r) => r.assessment);
-  const rejected = list.filter((r) => !r.assessment);
-  const counts = scored.reduce<Record<Category, number>>(
+  const scored = list.filter((r) => r.assessment && r.assessment.category !== "REJECTED");
+  const rejected = list.filter((r) => !r.assessment || r.assessment.category === "REJECTED");
+  const counts = list.reduce<Record<Category, number>>(
     (acc, r) => {
-      acc[r.assessment!.category] += 1;
+      const cat: Category = r.assessment ? r.assessment.category : "REJECTED";
+      acc[cat] += 1;
       return acc;
     },
-    { LOW: 0, MEDIUM: 0, ORANGE: 0, RED: 0 },
+    { LOW: 0, MEDIUM: 0, HIGH: 0, REJECTED: 0 },
   );
   const avg = scored.length
     ? (scored.reduce((s, r) => s + r.assessment!.total_score, 0) / scored.length).toFixed(2)
