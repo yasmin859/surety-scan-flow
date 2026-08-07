@@ -543,11 +543,11 @@ export function runAssessment(m: Merchant): Assessment {
   const adjustedTotal = round2(newAndNoHistory ? Math.max(1, total - 0.3) : total);
 
   const industryGate = checkIndustry(m.industry);
-  const category: Category = industryGate.rejected ? "REJECTED" : categorise(total);
+  const category: Category = industryGate.rejected ? "REJECTED" : categorise(adjustedTotal);
 
   return {
     scores,
-    total_score: total,
+    total_score: adjustedTotal,
     category,
     monitoring_days: MONITORING[category],
     ...(industryGate.reason ? { rejection_reason: industryGate.reason } : {}),
