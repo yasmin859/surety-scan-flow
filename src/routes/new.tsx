@@ -33,7 +33,6 @@ import {
   type Merchant,
   type MerchantRecord,
   type MerchantTicket,
-  type PaymentFlow,
   type ProcessingHistory,
   type ProductType,
 } from "@/lib/risk-engine";
@@ -142,7 +141,6 @@ const emptyMerchant: Merchant = {
   delivery_type: "Delayed",
   avg_order_value: 60,
   business_model: "Ecommerce",
-  payment_flow: "Merchant controls funds",
   processing_history: "No history",
   chargeback_rate: 0,
   fraud_rate: 0,
@@ -170,8 +168,6 @@ function NewAssessment() {
   const [legit, setLegit] = useState<Legitimacy>({
     registered_business: true,
     website_live: true,
-    ownership_verified: true,
-    activity_matches_description: true,
   });
   const [m, setM] = useState<Merchant>(emptyMerchant);
 
@@ -227,8 +223,6 @@ function NewAssessment() {
   const legitFields: { key: keyof Legitimacy; label: string }[] = [
     { key: "registered_business", label: "Registered business" },
     { key: "website_live", label: "Website live" },
-    { key: "ownership_verified", label: "Ownership verified" },
-    { key: "activity_matches_description", label: "Activity matches description" },
   ];
 
   return (
@@ -484,13 +478,6 @@ function NewAssessment() {
                   value={m.business_model}
                   onChange={(v) => set("business_model", v)}
                   options={["Ecommerce", "Marketplace", "Wayflyer Referral", "StoreHero Referral"]}
-                />
-              </Field>
-              <Field label="Payment flow">
-                <Picker<PaymentFlow>
-                  value={m.payment_flow}
-                  onChange={(v) => set("payment_flow", v)}
-                  options={["Merchant controls funds", "Third-party controls funds"]}
                 />
               </Field>
             </div>

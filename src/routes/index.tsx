@@ -46,8 +46,6 @@ function Dashboard() {
   }, []);
 
   const list = records ?? [];
-  const scored = list.filter((r) => r.assessment && r.assessment.category !== "REJECTED");
-  const rejected = list.filter((r) => !r.assessment || r.assessment.category === "REJECTED");
   const counts = list.reduce<Record<Category, number>>(
     (acc, r) => {
       const cat: Category = r.assessment ? r.assessment.category : "REJECTED";
@@ -56,9 +54,6 @@ function Dashboard() {
     },
     { LOW: 0, MEDIUM: 0, HIGH: 0, REJECTED: 0 },
   );
-  const avg = scored.length
-    ? (scored.reduce((s, r) => s + r.assessment!.total_score, 0) / scored.length).toFixed(2)
-    : "—";
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
@@ -82,9 +77,6 @@ function Dashboard() {
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Merchants assessed" value={list.length} />
-        <Stat label="Average risk score" value={avg} />
-        <Stat label="High risk" value={counts.HIGH} tone="text-risk-red" />
-        <Stat label="Rejected" value={rejected.length} tone="text-muted-foreground" />
       </div>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-4">
