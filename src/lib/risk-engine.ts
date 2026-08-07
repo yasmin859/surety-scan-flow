@@ -6,7 +6,6 @@
 export type ProductType = "Physical" | "Digital" | "Subscription";
 export type DeliveryType = "Instant" | "Delayed";
 export type BusinessModel = "Ecommerce" | "Marketplace" | "Wayflyer Referral" | "StoreHero Referral";
-export type PaymentFlow = "Merchant controls funds" | "Third-party controls funds";
 export type ProcessingHistory =
   | "No history"
   | "<6 months"
@@ -43,7 +42,6 @@ export interface Merchant {
   delivery_type: DeliveryType;
   avg_order_value: number;
   business_model: BusinessModel;
-  payment_flow: PaymentFlow;
   processing_history: ProcessingHistory;
   chargeback_rate: number;
   fraud_rate: number;
@@ -56,8 +54,6 @@ export interface Merchant {
 export interface Legitimacy {
   registered_business: boolean;
   website_live: boolean;
-  ownership_verified: boolean;
-  activity_matches_description: boolean;
 }
 
 export interface ActualMetrics {
@@ -239,12 +235,12 @@ export const STRIPE_RESTRICTED_URL = "https://stripe.com/ie/legal/restricted-bus
 
 export const WEIGHTS = {
   merchant_country: 0.16,
-  customer_exposure: 0.22,
+  customer_exposure: 0.16,
   industry_product: 0.2,
-  business_model: 0.12,
+  business_model: 0.05,
   fraud_signals: 0.12,
-  historical: 0.08,
-  business_maturity: 0.1,
+  historical: 0.14,
+  business_maturity: 0.17,
 } as const;
 
 /** Thresholds used for "high" flags in historical, AOV and fraud-signal scoring. */
@@ -271,8 +267,6 @@ export function checkLegitimacy(l: Legitimacy): { passed: boolean; status: strin
   const labels: Record<keyof Legitimacy, string> = {
     registered_business: "Registered business",
     website_live: "Website live",
-    ownership_verified: "Ownership verified",
-    activity_matches_description: "Activity matches description",
   };
   const failures = (Object.keys(labels) as (keyof Legitimacy)[])
     .filter((k) => !l[k])
@@ -408,10 +402,6 @@ function scoreBusinessModel(m: Merchant): ComponentScore {
   if (m.business_model === "Wayflyer Referral" || m.business_model === "StoreHero Referral") {
     score -= 0.5;
     lines.push({ label: `Vetted partner referral (${m.business_model})`, value: -0.5 });
-  }
-  if (m.payment_flow === "Third-party controls funds") {
-    score += 0.5;
-    lines.push({ label: "Third-party controls funds", value: 0.5 });
   }
 
   return { score: round2(clamp(score, 1, 5)), lines };

@@ -329,7 +329,6 @@ function MerchantDetail() {
                 <Row label="Delivery" value={m.delivery_type} />
                 <Row label="Avg order value" value={m.avg_order_value} />
                 <Row label="Business model" value={m.business_model} />
-                <Row label="Payment flow" value={m.payment_flow} />
                 <Row label="Processing history" value={m.processing_history} />
                 <Row label="Maturity" value={m.business_maturity} />
                 <Row label="Chargeback rate" value={`${m.chargeback_rate}%`} />
