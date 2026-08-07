@@ -483,8 +483,8 @@ function scoreHistorical(m: Merchant): ComponentScore {
 const MATURITY_SCORE: Record<BusinessMaturity, number> = {
   MVP: 5,
   "<1 year": 3,
-  "1-3 years": 3,
-  "3+ years": 2,
+  "1-3 years": 2,
+  "3+ years": 1,
 };
 
 function scoreMaturity(m: Merchant): ComponentScore {
