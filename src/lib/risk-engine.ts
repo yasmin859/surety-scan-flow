@@ -442,13 +442,18 @@ function scoreFraudSignals(m: Merchant): ComponentScore {
 /* 4.6 Historical performance                                          */
 /* ------------------------------------------------------------------ */
 
-function scoreHistorical(m: Merchant): ComponentScore {
-  if (m.processing_history === "No history") {
-    return { score: 2.5, lines: [{ label: "No processing history (neutral)", value: 2.5 }] };
-  }
+const HISTORY_SCORE: Record<ProcessingHistory, number> = {
+  "No history": 5,
+  "<6 months": 4,
+  "6-12 months": 3,
+  "1-3 years": 2,
+  "3+ years": 1,
+};
 
-  const lines: ScoreLine[] = [{ label: "Baseline with processing history", value: 3 }];
-  let score = 3;
+function scoreHistorical(m: Merchant): ComponentScore {
+  const base = HISTORY_SCORE[m.processing_history];
+  const lines: ScoreLine[] = [{ label: `Processing history baseline (${m.processing_history})`, value: base }];
+  let score = base;
 
   if (m.chargeback_rate > THRESHOLDS.chargeback_high) {
     score += 1;
