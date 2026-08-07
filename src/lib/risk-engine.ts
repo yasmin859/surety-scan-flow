@@ -444,7 +444,7 @@ function scoreFraudSignals(m: Merchant): ComponentScore {
 
 function scoreHistorical(m: Merchant): ComponentScore {
   if (m.processing_history === "No history") {
-    return { score: 3, lines: [{ label: "No processing history (neutral)", value: 3 }] };
+    return { score: 2.5, lines: [{ label: "No processing history (neutral)", value: 2.5 }] };
   }
 
   const lines: ScoreLine[] = [{ label: "Baseline with processing history", value: 3 }];
@@ -482,7 +482,7 @@ function scoreHistorical(m: Merchant): ComponentScore {
 
 const MATURITY_SCORE: Record<BusinessMaturity, number> = {
   MVP: 5,
-  "<1 year": 4,
+  "<1 year": 3,
   "1-3 years": 3,
   "3+ years": 2,
 };
@@ -536,6 +536,11 @@ export function runAssessment(m: Merchant): Assessment {
       scores.historical.score * WEIGHTS.historical +
       scores.business_maturity.score * WEIGHTS.business_maturity,
   );
+
+  // Interaction adjustment: new merchants without processing history should not be
+  // double-penalised by the maturity and historical components simultaneously.
+  const newAndNoHistory = m.business_maturity === "<1 year" && m.processing_history === "No history";
+  const adjustedTotal = round2(newAndNoHistory ? Math.max(1, total - 0.3) : total);
 
   const industryGate = checkIndustry(m.industry);
   const category: Category = industryGate.rejected ? "REJECTED" : categorise(total);
