@@ -19,6 +19,7 @@ import { RiskBadge } from "@/components/risk-badges";
 import { ScoreBreakdown } from "@/components/score-breakdown";
 import {
   COUNTRIES,
+  EMAIL_DOMAIN_TYPES,
   INDUSTRY_CATALOG,
   STRIPE_RESTRICTED_URL,
   checkIndustry,
