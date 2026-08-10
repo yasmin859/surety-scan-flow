@@ -13,6 +13,29 @@ export type ProcessingHistory =
   | "1-3 years"
   | "3+ years";
 export type BusinessMaturity = "MVP" | "<1 year" | "1-3 years" | "3+ years";
+/** Email domain classification used by the IP & email quality factor. */
+export type EmailDomainType =
+  | "Verified corporate domain"
+  | "Major free webmail (Gmail, Outlook, Yahoo, iCloud)"
+  | "Other / less common free domain"
+  | "Newly registered domain (<60 days) or no MX record"
+  | "Disposable / temp-mail domain";
+
+export const EMAIL_DOMAIN_TYPES: EmailDomainType[] = [
+  "Verified corporate domain",
+  "Major free webmail (Gmail, Outlook, Yahoo, iCloud)",
+  "Other / less common free domain",
+  "Newly registered domain (<60 days) or no MX record",
+  "Disposable / temp-mail domain",
+];
+
+export const EMAIL_DOMAIN_SCORE: Record<EmailDomainType, number> = {
+  "Verified corporate domain": 1,
+  "Major free webmail (Gmail, Outlook, Yahoo, iCloud)": 2,
+  "Other / less common free domain": 3,
+  "Newly registered domain (<60 days) or no MX record": 4,
+  "Disposable / temp-mail domain": 5,
+};
 /** Risk levels. Colour is presentation-only: Low = green, Medium = orange, High = red. */
 export type Category = "LOW" | "MEDIUM" | "HIGH" | "REJECTED";
 export type Variance = "ACCURATE" | "FALSE POSITIVE" | "UNDER-ESTIMATED RISK";
