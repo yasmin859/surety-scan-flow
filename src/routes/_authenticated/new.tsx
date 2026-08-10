@@ -39,7 +39,7 @@ import {
 } from "@/lib/risk-engine";
 import { upsertRecord } from "@/lib/records-store";
 
-export const Route = createFileRoute("/new")({
+export const Route = createFileRoute("/_authenticated/new")({
   head: () => ({
     meta: [
       { title: "New Merchant Assessment | Risk Engine" },

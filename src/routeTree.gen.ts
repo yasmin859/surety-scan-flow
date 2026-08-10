@@ -9,86 +9,90 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as NewRouteImport } from './routes/new'
-import { Route as MerchantIdRouteImport } from './routes/merchant.$id'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
+import { Route as AuthenticatedMerchantIdRouteImport } from './routes/_authenticated/merchant.$id'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/_authenticated/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NewRoute = NewRouteImport.update({
-  id: '/new',
+const AuthenticatedNewRoute = AuthenticatedNewRouteImport.update({
+  id: '/_authenticated/new',
   path: '/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MerchantIdRoute = MerchantIdRouteImport.update({
-  id: '/merchant/$id',
+const AuthenticatedMerchantIdRoute = AuthenticatedMerchantIdRouteImport.update({
+  id: '/_authenticated/merchant/$id',
   path: '/merchant/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/new': typeof NewRoute
-  '/merchant/$id': typeof MerchantIdRoute
+  '/new': typeof AuthenticatedNewRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/merchant/$id': typeof AuthenticatedMerchantIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/new': typeof NewRoute
-  '/merchant/$id': typeof MerchantIdRoute
+  '/new': typeof AuthenticatedNewRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/merchant/$id': typeof AuthenticatedMerchantIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/new': typeof NewRoute
-  '/merchant/$id': typeof MerchantIdRoute
+  '/_authenticated/new': typeof AuthenticatedNewRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/merchant/$id': typeof AuthenticatedMerchantIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/new' | '/merchant/$id'
+  fullPaths: '/new' | '/' | '/merchant/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/new' | '/merchant/$id'
-  id: '__root__' | '/' | '/new' | '/merchant/$id'
+  to: '/new' | '/' | '/merchant/$id'
+  id:
+    | '__root__'
+    | '/_authenticated/new'
+    | '/_authenticated/'
+    | '/_authenticated/merchant/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  NewRoute: typeof NewRoute
-  MerchantIdRoute: typeof MerchantIdRoute
+  AuthenticatedNewRoute: typeof AuthenticatedNewRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedMerchantIdRoute: typeof AuthenticatedMerchantIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/new': {
-      id: '/new'
+    '/_authenticated/new': {
+      id: '/_authenticated/new'
       path: '/new'
       fullPath: '/new'
-      preLoaderRoute: typeof NewRouteImport
+      preLoaderRoute: typeof AuthenticatedNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/merchant/$id': {
-      id: '/merchant/$id'
+    '/_authenticated/merchant/$id': {
+      id: '/_authenticated/merchant/$id'
       path: '/merchant/$id'
       fullPath: '/merchant/$id'
-      preLoaderRoute: typeof MerchantIdRouteImport
+      preLoaderRoute: typeof AuthenticatedMerchantIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  NewRoute: NewRoute,
-  MerchantIdRoute: MerchantIdRoute,
+  AuthenticatedNewRoute: AuthenticatedNewRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedMerchantIdRoute: AuthenticatedMerchantIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

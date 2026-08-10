@@ -7,7 +7,7 @@ import { RiskBadge, StageChip } from "@/components/risk-badges";
 import { loadRecords } from "@/lib/records-store";
 import type { Category, MerchantRecord } from "@/lib/risk-engine";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Merchant Risk Engine | Onboarding Portfolio" },

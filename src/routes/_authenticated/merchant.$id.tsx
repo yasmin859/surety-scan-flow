@@ -24,7 +24,7 @@ import {
   type MerchantRecord,
 } from "@/lib/risk-engine";
 
-export const Route = createFileRoute("/merchant/$id")({
+export const Route = createFileRoute("/_authenticated/merchant/$id")({
   head: () => ({
     meta: [
       { title: "Merchant Risk File | Risk Engine" },
