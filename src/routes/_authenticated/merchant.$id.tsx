@@ -219,6 +219,8 @@ function MerchantDetail() {
               <ScoreBreakdown assessment={assessment} />
             </section>
 
+            <AccountHealthCard value={health} onChange={saveHealth} />
+
             <section className="panel p-6">
               <h2 className="text-lg font-semibold">Stage 2 — monitoring validation</h2>
               <p className="mb-4 text-sm text-muted-foreground">
