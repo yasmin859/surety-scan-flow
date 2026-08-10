@@ -164,6 +164,9 @@ export interface MerchantRecord {
     variance: Variance;
   } | null;
   final_decision: string | null;
+  /** Operational only — excluded from scoring. */
+  account_health?: AccountHealth;
+
 }
 
 /* ------------------------------------------------------------------ */
