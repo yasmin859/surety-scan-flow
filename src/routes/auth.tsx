@@ -27,9 +27,9 @@ export const Route = createFileRoute("/auth")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>) => ({
-    denied: typeof s['denied'] === "string" ? s['denied'] : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): { denied?: string } =>
+    typeof s['denied'] === "string" ? { denied: s['denied'] } : {},
+
   component: AuthPage,
 });
 

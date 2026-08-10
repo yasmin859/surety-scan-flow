@@ -81,6 +81,41 @@ export interface Legitimacy {
   website_live: boolean;
 }
 
+/* ------------------------------------------------------------------ */
+/* Account health — operational only, never part of the risk score     */
+/* ------------------------------------------------------------------ */
+
+export const VERIFICATION_STATUSES = ["Complete", "Pending Documents", "Restricted"] as const;
+export const ACCOUNT_IMPACTS = ["Payouts Blocked", "Payments Blocked", "Both"] as const;
+export const CONTACT_STATUSES = ["Not Contacted", "Contacted", "Resolved"] as const;
+
+export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
+export type AccountImpact = (typeof ACCOUNT_IMPACTS)[number];
+export type ContactStatus = (typeof CONTACT_STATUSES)[number];
+
+/**
+ * Operational account-health record. Deliberately excluded from `runAssessment`
+ * and every weighted factor — it is an operational alert, not a risk signal.
+ */
+export interface AccountHealth {
+  verification_status: VerificationStatus;
+  impact: AccountImpact | "";
+  missing_items: string;
+  followup_ticket: string;
+  contact_status: ContactStatus;
+  date_contacted: string;
+}
+
+export const EMPTY_ACCOUNT_HEALTH: AccountHealth = {
+  verification_status: "Complete",
+  impact: "",
+  missing_items: "",
+  followup_ticket: "",
+  contact_status: "Not Contacted",
+  date_contacted: "",
+};
+
+
 export interface ActualMetrics {
   fraud_rate: number;
   chargebacks: number;
