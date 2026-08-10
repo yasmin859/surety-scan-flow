@@ -42,10 +42,20 @@ function Stat({ label, value, tone }: { label: string; value: string | number; t
 
 function Dashboard() {
   const [records, setRecords] = useState<MerchantRecord[] | null>(null);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     setRecords(loadRecords());
   }, []);
+
+  const signOut = async () => {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  };
+
 
   const list = records ?? [];
   const counts = list.reduce<Record<Category, number>>(
