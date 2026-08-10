@@ -15,11 +15,14 @@ import {
 } from "@/components/ui/select";
 import { RiskBadge, StageChip, VarianceBadge } from "@/components/risk-badges";
 import { ScoreBreakdown } from "@/components/score-breakdown";
+import { AccountHealthCard } from "@/components/account-health-card";
 import { deleteRecord, getRecord, upsertRecord } from "@/lib/records-store";
 import {
   compareStage2,
   decide,
   observedCategory,
+  EMPTY_ACCOUNT_HEALTH,
+  type AccountHealth,
   type ActualMetrics,
   type MerchantRecord,
 } from "@/lib/risk-engine";
