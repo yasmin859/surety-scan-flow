@@ -68,11 +68,17 @@ function Dashboard() {
             every score fully explainable and auditable.
           </p>
         </div>
-        <Button asChild size="lg">
-          <Link to="/new">
-            <Plus className="size-4" /> New assessment
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild size="lg">
+            <Link to="/new">
+              <Plus className="size-4" /> New assessment
+            </Link>
+          </Button>
+          <Button variant="ghost" size="lg" onClick={signOut}>
+            <LogOut className="size-4" /> Sign out
+          </Button>
+        </div>
+
       </header>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
