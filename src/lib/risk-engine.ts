@@ -436,27 +436,53 @@ function scoreBusinessModel(m: Merchant): ComponentScore {
 /* 4.5 IP & email quality signals                                      */
 /* ------------------------------------------------------------------ */
 
-/** Maps a 0-100 fraud score proportionally onto the 1-5 risk band. */
-function signalScore(v: number): number {
-  return 1 + (clamp(v, 0, 100) / 100) * 4;
+/** Banded IP fraud sub-score (1-5). */
+export function ipSubScore(v: number): number {
+  const n = clamp(Number(v) || 0, 0, 100);
+  if (n <= 30) return 1;
+  if (n <= 50) return 2;
+  if (n <= 70) return 3;
+  if (n <= 80) return 4;
+  return 5;
+}
+
+/** Extracts a bare domain from an email address or website URL. */
+export function extractDomain(value: string): string {
+  const v = (value || "").trim().toLowerCase();
+  if (!v) return "";
+  const afterAt = v.includes("@") ? v.split("@").pop()! : v;
+  const host = afterAt.replace(/^[a-z]+:\/\//, "").split("/")[0]!.split("?")[0]!;
+  return host.replace(/^www\./, "").replace(/\.$/, "");
 }
 
 function scoreFraudSignals(m: Merchant): ComponentScore {
-  const email = clamp(Number(m.email_fraud_score) || 0, 0, 100);
-  const ip = clamp(Number(m.ip_fraud_score) || 0, 0, 100);
-  const base = (signalScore(email) + signalScore(ip)) / 2;
+  const ipRaw = clamp(Number(m.ip_fraud_score) || 0, 0, 100);
+  const ip = ipSubScore(ipRaw);
+
+  const domainType: EmailDomainType = m.email_domain_type ?? "Other / less common free domain";
+  let email = EMAIL_DOMAIN_SCORE[domainType] ?? 3;
 
   const lines: ScoreLine[] = [
-    { label: `Email fraud score ${email} / IP fraud score ${ip} (proportional)`, value: round2(base) },
+    { label: `IP fraud score ${ipRaw} → sub-score`, value: ip },
+    { label: `Email domain: ${domainType}`, value: email },
   ];
-  let score = base;
 
-  if (email > THRESHOLDS.fraud_signal_high) {
-    score += 0.5;
-    lines.push({ label: `Email fraud score above ${THRESHOLDS.fraud_signal_high}`, value: 0.5 });
+  const isFreeWebmail = domainType === "Major free webmail (Gmail, Outlook, Yahoo, iCloud)";
+  const emailDomain = extractDomain(m.merchant_email);
+  const siteDomain = extractDomain(m.merchant_website);
+  if (!isFreeWebmail && emailDomain && siteDomain && emailDomain !== siteDomain) {
+    email = Math.min(5, email + 1);
+    lines.push({
+      label: `Identity mismatch (${emailDomain} ≠ ${siteDomain})`,
+      value: 1,
+    });
   }
-  if (ip > THRESHOLDS.fraud_signal_high) {
-    score += 0.5;
+
+  let score = Math.max(ip, email);
+  lines.push({ label: "Combined (higher of IP / email)", value: score });
+
+  if (ipRaw > THRESHOLDS.fraud_signal_high) {
+    score = Math.min(5, score + 0.5);
     lines.push({ label: `IP fraud score above ${THRESHOLDS.fraud_signal_high}`, value: 0.5 });
   }
 
