@@ -1,9 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Activity, ArrowRight, Plus, ShieldAlert } from "lucide-react";
+import { Activity, ArrowRight, LogOut, Plus, ShieldAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { RiskBadge, StageChip } from "@/components/risk-badges";
+import { supabase } from "@/integrations/supabase/client";
 import { loadRecords } from "@/lib/records-store";
 import type { Category, MerchantRecord } from "@/lib/risk-engine";
 
