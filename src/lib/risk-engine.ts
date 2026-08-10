@@ -36,8 +36,10 @@ export interface Merchant {
   operating_country: string;
   customer_distribution: CustomerCountry[];
   industry: string;
-  email_fraud_score: number;
+  email_domain_type: EmailDomainType;
   ip_fraud_score: number;
+  stripe_account_exists: boolean;
+  stripe_account_link: string;
   product_type: ProductType;
   delivery_type: DeliveryType;
   avg_order_value: number;
