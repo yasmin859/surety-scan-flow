@@ -322,8 +322,15 @@ function MerchantDetail() {
               <div className="mt-4">
                 <Row label="Email" value={m.merchant_email || "—"} />
                 <Row label="Website" value={m.merchant_website || "—"} />
-                <Row label="Email fraud score" value={m.email_fraud_score} />
+                <Row label="Email domain type" value={m.email_domain_type ?? "—"} />
                 <Row label="IP fraud score" value={m.ip_fraud_score} />
+                <Row
+                  label="Stripe connected account"
+                  value={m.stripe_account_exists === false ? "No (+2)" : "Yes"}
+                />
+                {m.stripe_account_exists && m.stripe_account_link && (
+                  <Row label="Connected account link" value={m.stripe_account_link} />
+                )}
                 <Row label="Industry" value={m.industry} />
                 <Row label="Product type" value={m.product_type} />
                 <Row label="Delivery" value={m.delivery_type} />

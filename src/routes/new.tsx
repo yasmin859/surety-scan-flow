@@ -19,6 +19,7 @@ import { RiskBadge } from "@/components/risk-badges";
 import { ScoreBreakdown } from "@/components/score-breakdown";
 import {
   COUNTRIES,
+  EMAIL_DOMAIN_TYPES,
   INDUSTRY_CATALOG,
   STRIPE_RESTRICTED_URL,
   checkIndustry,
@@ -135,8 +136,10 @@ const emptyMerchant: Merchant = {
   operating_country: "United Kingdom",
   customer_distribution: [{ country: "United Kingdom", percentage: 100 }],
   industry: "Retail / eCommerce",
-  email_fraud_score: 0,
+  email_domain_type: "Verified corporate domain",
   ip_fraud_score: 0,
+  stripe_account_exists: true,
+  stripe_account_link: "",
   product_type: "Physical",
   delivery_type: "Delayed",
   avg_order_value: 60,
@@ -352,17 +355,47 @@ function NewAssessment() {
                 )}
               </SubBox>
 
+              <SubBox title="Stripe connected account">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium">Stripe connected account exists?</p>
+                    <p className="text-xs text-muted-foreground">
+                      No connected account adds +2 to the total score (process stage, not fraud).
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {m.stripe_account_exists ? "Yes" : "No"}
+                    </span>
+                    <Switch
+                      checked={m.stripe_account_exists}
+                      onCheckedChange={(v) => {
+                        set("stripe_account_exists", v);
+                        if (!v) set("stripe_account_link", "");
+                      }}
+                    />
+                  </div>
+                </div>
+                {m.stripe_account_exists && (
+                  <div className="mt-4">
+                    <Field label="Connected account link">
+                      <Input
+                        value={m.stripe_account_link}
+                        onChange={(e) => set("stripe_account_link", e.target.value.slice(0, 255))}
+                        placeholder="https://dashboard.stripe.com/connect/accounts/acct_..."
+                      />
+                    </Field>
+                  </div>
+                )}
+              </SubBox>
+
               <SubBox title="IP & email quality check">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Email fraud score (0-100)">
-                    <Input
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={m.email_fraud_score}
-                      onChange={(e) =>
-                        set("email_fraud_score", Math.max(0, Math.min(100, Number(e.target.value) || 0)))
-                      }
+                  <Field label="Email domain type">
+                    <Picker
+                      value={m.email_domain_type}
+                      onChange={(v) => set("email_domain_type", v as typeof m.email_domain_type)}
+                      options={EMAIL_DOMAIN_TYPES}
                     />
                   </Field>
                   <Field label="IP fraud score (0-100)">
@@ -378,9 +411,11 @@ function NewAssessment() {
                   </Field>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Scores contribute proportionally to risk; anything above 80 adds an extra penalty.
+                  Score is the higher of the IP band and the email domain sub-score. Custom domains that
+                  don't match the merchant website add +1; an IP score above 80 adds +0.5 (max 5).
                 </p>
               </SubBox>
+
             </div>
           </SectionCard>
 

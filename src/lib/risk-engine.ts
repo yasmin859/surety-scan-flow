@@ -13,6 +13,29 @@ export type ProcessingHistory =
   | "1-3 years"
   | "3+ years";
 export type BusinessMaturity = "MVP" | "<1 year" | "1-3 years" | "3+ years";
+/** Email domain classification used by the IP & email quality factor. */
+export type EmailDomainType =
+  | "Verified corporate domain"
+  | "Major free webmail (Gmail, Outlook, Yahoo, iCloud)"
+  | "Other / less common free domain"
+  | "Newly registered domain (<60 days) or no MX record"
+  | "Disposable / temp-mail domain";
+
+export const EMAIL_DOMAIN_TYPES: EmailDomainType[] = [
+  "Verified corporate domain",
+  "Major free webmail (Gmail, Outlook, Yahoo, iCloud)",
+  "Other / less common free domain",
+  "Newly registered domain (<60 days) or no MX record",
+  "Disposable / temp-mail domain",
+];
+
+export const EMAIL_DOMAIN_SCORE: Record<EmailDomainType, number> = {
+  "Verified corporate domain": 1,
+  "Major free webmail (Gmail, Outlook, Yahoo, iCloud)": 2,
+  "Other / less common free domain": 3,
+  "Newly registered domain (<60 days) or no MX record": 4,
+  "Disposable / temp-mail domain": 5,
+};
 /** Risk levels. Colour is presentation-only: Low = green, Medium = orange, High = red. */
 export type Category = "LOW" | "MEDIUM" | "HIGH" | "REJECTED";
 export type Variance = "ACCURATE" | "FALSE POSITIVE" | "UNDER-ESTIMATED RISK";
@@ -36,8 +59,10 @@ export interface Merchant {
   operating_country: string;
   customer_distribution: CustomerCountry[];
   industry: string;
-  email_fraud_score: number;
+  email_domain_type: EmailDomainType;
   ip_fraud_score: number;
+  stripe_account_exists: boolean;
+  stripe_account_link: string;
   product_type: ProductType;
   delivery_type: DeliveryType;
   avg_order_value: number;
@@ -411,27 +436,53 @@ function scoreBusinessModel(m: Merchant): ComponentScore {
 /* 4.5 IP & email quality signals                                      */
 /* ------------------------------------------------------------------ */
 
-/** Maps a 0-100 fraud score proportionally onto the 1-5 risk band. */
-function signalScore(v: number): number {
-  return 1 + (clamp(v, 0, 100) / 100) * 4;
+/** Banded IP fraud sub-score (1-5). */
+export function ipSubScore(v: number): number {
+  const n = clamp(Number(v) || 0, 0, 100);
+  if (n <= 30) return 1;
+  if (n <= 50) return 2;
+  if (n <= 70) return 3;
+  if (n <= 80) return 4;
+  return 5;
+}
+
+/** Extracts a bare domain from an email address or website URL. */
+export function extractDomain(value: string): string {
+  const v = (value || "").trim().toLowerCase();
+  if (!v) return "";
+  const afterAt = v.includes("@") ? v.split("@").pop()! : v;
+  const host = afterAt.replace(/^[a-z]+:\/\//, "").split("/")[0]!.split("?")[0]!;
+  return host.replace(/^www\./, "").replace(/\.$/, "");
 }
 
 function scoreFraudSignals(m: Merchant): ComponentScore {
-  const email = clamp(Number(m.email_fraud_score) || 0, 0, 100);
-  const ip = clamp(Number(m.ip_fraud_score) || 0, 0, 100);
-  const base = (signalScore(email) + signalScore(ip)) / 2;
+  const ipRaw = clamp(Number(m.ip_fraud_score) || 0, 0, 100);
+  const ip = ipSubScore(ipRaw);
+
+  const domainType: EmailDomainType = m.email_domain_type ?? "Other / less common free domain";
+  let email = EMAIL_DOMAIN_SCORE[domainType] ?? 3;
 
   const lines: ScoreLine[] = [
-    { label: `Email fraud score ${email} / IP fraud score ${ip} (proportional)`, value: round2(base) },
+    { label: `IP fraud score ${ipRaw} → sub-score`, value: ip },
+    { label: `Email domain: ${domainType}`, value: email },
   ];
-  let score = base;
 
-  if (email > THRESHOLDS.fraud_signal_high) {
-    score += 0.5;
-    lines.push({ label: `Email fraud score above ${THRESHOLDS.fraud_signal_high}`, value: 0.5 });
+  const isFreeWebmail = domainType === "Major free webmail (Gmail, Outlook, Yahoo, iCloud)";
+  const emailDomain = extractDomain(m.merchant_email);
+  const siteDomain = extractDomain(m.merchant_website);
+  if (!isFreeWebmail && emailDomain && siteDomain && emailDomain !== siteDomain) {
+    email = Math.min(5, email + 1);
+    lines.push({
+      label: `Identity mismatch (${emailDomain} ≠ ${siteDomain})`,
+      value: 1,
+    });
   }
-  if (ip > THRESHOLDS.fraud_signal_high) {
-    score += 0.5;
+
+  let score = Math.max(ip, email);
+  lines.push({ label: "Combined (higher of IP / email)", value: score });
+
+  if (ipRaw > THRESHOLDS.fraud_signal_high) {
+    score = Math.min(5, score + 0.5);
     lines.push({ label: `IP fraud score above ${THRESHOLDS.fraud_signal_high}`, value: 0.5 });
   }
 
@@ -545,7 +596,12 @@ export function runAssessment(m: Merchant): Assessment {
   // Interaction adjustment: new merchants without processing history should not be
   // double-penalised by the maturity and historical components simultaneously.
   const newAndNoHistory = m.business_maturity === "<1 year" && m.processing_history === "No history";
-  const adjustedTotal = round2(newAndNoHistory ? Math.max(1, total - 0.3) : total);
+  let adjustedTotal = round2(newAndNoHistory ? Math.max(1, total - 0.3) : total);
+
+  // Process-stage adjustment: no Stripe connected account yet (timing, not fraud).
+  if (m.stripe_account_exists === false) {
+    adjustedTotal = round2(Math.min(5, adjustedTotal + 2));
+  }
 
   const industryGate = checkIndustry(m.industry);
   const category: Category = industryGate.rejected ? "REJECTED" : categorise(adjustedTotal);
