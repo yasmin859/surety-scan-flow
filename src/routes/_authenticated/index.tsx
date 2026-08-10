@@ -1,13 +1,15 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Activity, ArrowRight, Plus, ShieldAlert } from "lucide-react";
+import { Activity, ArrowRight, LogOut, Plus, ShieldAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { RiskBadge, StageChip } from "@/components/risk-badges";
+import { supabase } from "@/integrations/supabase/client";
 import { loadRecords } from "@/lib/records-store";
 import type { Category, MerchantRecord } from "@/lib/risk-engine";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Merchant Risk Engine | Onboarding Portfolio" },
@@ -40,10 +42,20 @@ function Stat({ label, value, tone }: { label: string; value: string | number; t
 
 function Dashboard() {
   const [records, setRecords] = useState<MerchantRecord[] | null>(null);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     setRecords(loadRecords());
   }, []);
+
+  const signOut = async () => {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  };
+
 
   const list = records ?? [];
   const counts = list.reduce<Record<Category, number>>(
@@ -68,11 +80,17 @@ function Dashboard() {
             every score fully explainable and auditable.
           </p>
         </div>
-        <Button asChild size="lg">
-          <Link to="/new">
-            <Plus className="size-4" /> New assessment
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild size="lg">
+            <Link to="/new">
+              <Plus className="size-4" /> New assessment
+            </Link>
+          </Button>
+          <Button variant="ghost" size="lg" onClick={signOut}>
+            <LogOut className="size-4" /> Sign out
+          </Button>
+        </div>
+
       </header>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

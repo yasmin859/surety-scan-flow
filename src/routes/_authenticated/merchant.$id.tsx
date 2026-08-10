@@ -15,16 +15,19 @@ import {
 } from "@/components/ui/select";
 import { RiskBadge, StageChip, VarianceBadge } from "@/components/risk-badges";
 import { ScoreBreakdown } from "@/components/score-breakdown";
+import { AccountHealthCard } from "@/components/account-health-card";
 import { deleteRecord, getRecord, upsertRecord } from "@/lib/records-store";
 import {
   compareStage2,
   decide,
   observedCategory,
+  EMPTY_ACCOUNT_HEALTH,
+  type AccountHealth,
   type ActualMetrics,
   type MerchantRecord,
 } from "@/lib/risk-engine";
 
-export const Route = createFileRoute("/merchant/$id")({
+export const Route = createFileRoute("/_authenticated/merchant/$id")({
   head: () => ({
     meta: [
       { title: "Merchant Risk File | Risk Engine" },
@@ -64,12 +67,25 @@ function MerchantDetail() {
     refunds: 0,
     geo_behavior: "As expected",
   });
+  const [health, setHealth] = useState<AccountHealth>(EMPTY_ACCOUNT_HEALTH);
 
   useEffect(() => {
     const r = getRecord(id);
     setRecord(r ?? null);
     if (r?.stage2) setMetrics(r.stage2.actual_metrics);
+    setHealth(r?.account_health ?? EMPTY_ACCOUNT_HEALTH);
   }, [id]);
+
+  const saveHealth = (next: AccountHealth) => {
+    setHealth(next);
+    setRecord((prev) => {
+      if (!prev) return prev;
+      const updated: MerchantRecord = { ...prev, account_health: next };
+      upsertRecord(updated);
+      return updated;
+    });
+  };
+
 
   if (record === undefined) {
     return <main className="mx-auto max-w-5xl px-6 py-16 text-muted-foreground">Loading…</main>;
@@ -202,6 +218,8 @@ function MerchantDetail() {
               </p>
               <ScoreBreakdown assessment={assessment} />
             </section>
+
+            <AccountHealthCard value={health} onChange={saveHealth} />
 
             <section className="panel p-6">
               <h2 className="text-lg font-semibold">Stage 2 — monitoring validation</h2>
