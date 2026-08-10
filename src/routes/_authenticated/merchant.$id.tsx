@@ -67,12 +67,25 @@ function MerchantDetail() {
     refunds: 0,
     geo_behavior: "As expected",
   });
+  const [health, setHealth] = useState<AccountHealth>(EMPTY_ACCOUNT_HEALTH);
 
   useEffect(() => {
     const r = getRecord(id);
     setRecord(r ?? null);
     if (r?.stage2) setMetrics(r.stage2.actual_metrics);
+    setHealth(r?.account_health ?? EMPTY_ACCOUNT_HEALTH);
   }, [id]);
+
+  const saveHealth = (next: AccountHealth) => {
+    setHealth(next);
+    setRecord((prev) => {
+      if (!prev) return prev;
+      const updated: MerchantRecord = { ...prev, account_health: next };
+      upsertRecord(updated);
+      return updated;
+    });
+  };
+
 
   if (record === undefined) {
     return <main className="mx-auto max-w-5xl px-6 py-16 text-muted-foreground">Loading…</main>;
