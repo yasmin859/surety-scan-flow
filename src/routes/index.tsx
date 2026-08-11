@@ -1,15 +1,13 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Activity, ArrowRight, LogOut, Plus, ShieldAlert } from "lucide-react";
+import { Activity, ArrowRight, Plus, ShieldAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { RiskBadge, StageChip } from "@/components/risk-badges";
-import { supabase } from "@/integrations/supabase/client";
 import { loadRecords } from "@/lib/records-store";
 import type { Category, MerchantRecord } from "@/lib/risk-engine";
 
-export const Route = createFileRoute("/_authenticated/")({
+export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Merchant Risk Engine | Onboarding Portfolio" },
@@ -42,19 +40,10 @@ function Stat({ label, value, tone }: { label: string; value: string | number; t
 
 function Dashboard() {
   const [records, setRecords] = useState<MerchantRecord[] | null>(null);
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     setRecords(loadRecords());
   }, []);
-
-  const signOut = async () => {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  };
 
 
   const list = records ?? [];
@@ -85,9 +74,6 @@ function Dashboard() {
             <Link to="/new">
               <Plus className="size-4" /> New assessment
             </Link>
-          </Button>
-          <Button variant="ghost" size="lg" onClick={signOut}>
-            <LogOut className="size-4" /> Sign out
           </Button>
         </div>
 
