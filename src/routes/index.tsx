@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { loadRecords } from "@/lib/records-store";
 import type { Category, MerchantRecord } from "@/lib/risk-engine";
 
-export const Route = createFileRoute("/_authenticated/")({
+export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Merchant Risk Engine | Onboarding Portfolio" },

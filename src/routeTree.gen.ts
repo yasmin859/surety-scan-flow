@@ -9,134 +9,86 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
-import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
-import { Route as AuthenticatedMerchantIdRouteImport } from './routes/_authenticated/merchant.$id'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as NewRouteImport } from './routes/new'
+import { Route as MerchantIdRouteImport } from './routes/merchant.$id'
 
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedNewRoute = AuthenticatedNewRouteImport.update({
+const NewRoute = NewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedMerchantIdRoute = AuthenticatedMerchantIdRouteImport.update({
+const MerchantIdRoute = MerchantIdRouteImport.update({
   id: '/merchant/$id',
   path: '/merchant/$id',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthenticatedIndexRoute
-  '/auth': typeof AuthRoute
-  '/new': typeof AuthenticatedNewRoute
-  '/merchant/$id': typeof AuthenticatedMerchantIdRoute
+  '/': typeof IndexRoute
+  '/new': typeof NewRoute
+  '/merchant/$id': typeof MerchantIdRoute
 }
 export interface FileRoutesByTo {
-  '/auth': typeof AuthRoute
-  '/new': typeof AuthenticatedNewRoute
-  '/': typeof AuthenticatedIndexRoute
-  '/merchant/$id': typeof AuthenticatedMerchantIdRoute
+  '/': typeof IndexRoute
+  '/new': typeof NewRoute
+  '/merchant/$id': typeof MerchantIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRoute
-  '/_authenticated/new': typeof AuthenticatedNewRoute
-  '/_authenticated/': typeof AuthenticatedIndexRoute
-  '/_authenticated/merchant/$id': typeof AuthenticatedMerchantIdRoute
+  '/': typeof IndexRoute
+  '/new': typeof NewRoute
+  '/merchant/$id': typeof MerchantIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/new' | '/merchant/$id'
+  fullPaths: '/' | '/new' | '/merchant/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/new' | '/' | '/merchant/$id'
-  id:
-    | '__root__'
-    | '/_authenticated'
-    | '/auth'
-    | '/_authenticated/new'
-    | '/_authenticated/'
-    | '/_authenticated/merchant/$id'
+  to: '/' | '/new' | '/merchant/$id'
+  id: '__root__' | '/' | '/new' | '/merchant/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AuthRoute: typeof AuthRoute
+  IndexRoute: typeof IndexRoute
+  NewRoute: typeof NewRoute
+  MerchantIdRoute: typeof MerchantIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/': {
-      id: '/_authenticated/'
+    '/': {
+      id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/new': {
-      id: '/_authenticated/new'
+    '/new': {
+      id: '/new'
       path: '/new'
       fullPath: '/new'
-      preLoaderRoute: typeof AuthenticatedNewRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      preLoaderRoute: typeof NewRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/merchant/$id': {
-      id: '/_authenticated/merchant/$id'
+    '/merchant/$id': {
+      id: '/merchant/$id'
       path: '/merchant/$id'
       fullPath: '/merchant/$id'
-      preLoaderRoute: typeof AuthenticatedMerchantIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      preLoaderRoute: typeof MerchantIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface AuthenticatedRouteRouteChildren {
-  AuthenticatedNewRoute: typeof AuthenticatedNewRoute
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
-  AuthenticatedMerchantIdRoute: typeof AuthenticatedMerchantIdRoute
-}
-
-const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedNewRoute: AuthenticatedNewRoute,
-  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
-  AuthenticatedMerchantIdRoute: AuthenticatedMerchantIdRoute,
-}
-
-const AuthenticatedRouteRouteWithChildren =
-  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
-  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AuthRoute: AuthRoute,
+  IndexRoute: IndexRoute,
+  NewRoute: NewRoute,
+  MerchantIdRoute: MerchantIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
