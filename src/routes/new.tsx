@@ -134,7 +134,7 @@ const emptyMerchant: Merchant = {
   merchant_website: "",
   merchant_country: "United Kingdom",
   operating_country: "United Kingdom",
-  customer_distribution: [{ country: "United Kingdom", percentage: 100 }],
+
   industry: "Retail / eCommerce",
   email_domain_type: "Verified corporate domain",
   ip_fraud_score: 0,
@@ -180,17 +180,8 @@ function NewAssessment() {
   const industryGate = useMemo(() => checkIndustry(m.industry), [m.industry]);
   const preview = useMemo(() => (gate.passed ? runAssessment(m) : null), [gate.passed, m]);
 
-  const distTotal = m.customer_distribution.reduce((s, c) => s + (Number(c.percentage) || 0), 0);
-
-  const updateDist = (i: number, patch: Partial<CustomerCountry>) =>
-    setM((p) => ({
-      ...p,
-      customer_distribution: p.customer_distribution.map((c, idx) =>
-        idx === i ? { ...c, ...patch } : c,
-      ),
-    }));
-
   const updateTicket = (id: string, patch: Partial<MerchantTicket>) =>
+
     setM((p) => ({
       ...p,
       tickets: p.tickets.map((t) => (t.id === id ? { ...t, ...patch } : t)),
@@ -415,72 +406,8 @@ function NewAssessment() {
             </div>
           </SectionCard>
 
-          <SectionCard
-            step="STEP 2"
-            title="Customer exposure"
-            subtitle="Top 5 countries by volume are used for the weighted exposure score."
-          >
-            <div className="space-y-3">
-              {m.customer_distribution.map((c, i) => (
-                <div key={i} className="flex gap-3">
-                  <div className="flex-1">
-                    <Picker
-                      value={c.country}
-                      onChange={(v) => updateDist(i, { country: v })}
-                      options={COUNTRIES}
-                    />
-                  </div>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    className="w-28"
-                    value={c.percentage}
-                    onChange={(e) =>
-                      updateDist(i, { percentage: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })
-                    }
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      setM((p) => ({
-                        ...p,
-                        customer_distribution: p.customer_distribution.filter((_, idx) => idx !== i),
-                      }))
-                    }
-                    disabled={m.customer_distribution.length === 1}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 flex items-center justify-between">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() =>
-                  setM((p) => ({
-                    ...p,
-                    customer_distribution: [
-                      ...p.customer_distribution,
-                      { country: "Germany", percentage: 0 },
-                    ],
-                  }))
-                }
-              >
-                Add country
-              </Button>
-              <span
-                className={`font-mono text-xs ${distTotal === 100 ? "text-muted-foreground" : "text-risk-orange"}`}
-              >
-                total {distTotal}%
-              </span>
-            </div>
-          </SectionCard>
+          <SectionCard step="STEP 2" title="Product & business model">
 
-          <SectionCard step="STEP 3" title="Product & business model">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Product type">
                 <Picker<ProductType>
