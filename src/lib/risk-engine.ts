@@ -561,14 +561,14 @@ function scoreMaturity(m: Merchant): ComponentScore {
 
 export function categorise(score: number): Category {
   if (score <= 2.0) return "LOW";
-  if (score <= 3.2) return "MEDIUM";
+  if (score <= 3.5) return "MEDIUM";
   return "HIGH";
 }
 
 export const MONITORING: Record<Category, string> = {
   LOW: "21 days",
   MEDIUM: "60 days",
-  HIGH: "120+ days + strict monitoring",
+  HIGH: "120 days",
   REJECTED: "Not applicable",
 };
 
@@ -581,8 +581,7 @@ export const CATEGORY_LABEL: Record<Category, string> = {
 
 export function runAssessment(m: Merchant): Assessment {
   const scores = {
-    merchant_country: scoreMerchantCountry(m),
-    customer_exposure: scoreCustomerExposure(m),
+    merchant_country: scoreGeographicConsistency(m),
     industry_product: scoreIndustryProduct(m),
     business_model: scoreBusinessModel(m),
     fraud_signals: scoreFraudSignals(m),
@@ -592,7 +591,6 @@ export function runAssessment(m: Merchant): Assessment {
 
   const total = round2(
     scores.merchant_country.score * WEIGHTS.merchant_country +
-      scores.customer_exposure.score * WEIGHTS.customer_exposure +
       scores.industry_product.score * WEIGHTS.industry_product +
       scores.business_model.score * WEIGHTS.business_model +
       scores.fraud_signals.score * WEIGHTS.fraud_signals +
@@ -600,20 +598,12 @@ export function runAssessment(m: Merchant): Assessment {
       scores.business_maturity.score * WEIGHTS.business_maturity,
   );
 
-  // Interaction adjustment: new merchants without processing history should not be
-  // double-penalised by the maturity and historical components simultaneously.
-  const newAndNoHistory = m.business_maturity === "<1 year" && m.processing_history === "No history";
-  const adjustedTotal = round2(newAndNoHistory ? Math.max(1, total - 0.3) : total);
-
-  // Stripe connected account is tracked for operations only — it never affects the score.
-
-
   const industryGate = checkIndustry(m.industry);
-  const category: Category = industryGate.rejected ? "REJECTED" : categorise(adjustedTotal);
+  const category: Category = industryGate.rejected ? "REJECTED" : categorise(total);
 
   return {
     scores,
-    total_score: adjustedTotal,
+    total_score: total,
     category,
     monitoring_days: MONITORING[category],
     ...(industryGate.reason ? { rejection_reason: industryGate.reason } : {}),
@@ -621,29 +611,100 @@ export function runAssessment(m: Merchant): Assessment {
 }
 
 /* ------------------------------------------------------------------ */
-/* Stage 2 — observed behaviour                                        */
+/* Stage 2 — observed behaviour, performance-first                      */
 /* ------------------------------------------------------------------ */
 
 const CATEGORY_RANK: Record<Category, number> = { REJECTED: 0, LOW: 1, MEDIUM: 2, HIGH: 3 };
 
-/** Derives an observed risk category from live monitoring metrics. */
+/**
+ * Observed Historical Performance sub-score (1-5) derived purely from realised
+ * losses — fraud, chargebacks and refunds. Geographic drift is deliberately
+ * excluded: dispersion is not a loss.
+ */
+export function observedPerformanceScore(a: ActualMetrics): number {
+  let score = 1;
+  if (a.fraud_rate > 1) score += 2;
+  else if (a.fraud_rate > THRESHOLDS.fraud_high) score += 1;
+
+  if (a.chargebacks > 1.5) score += 2;
+  else if (a.chargebacks > THRESHOLDS.chargeback_high) score += 1;
+
+  if (a.refunds > 15) score += 1;
+  else if (a.refunds > THRESHOLDS.refund_high) score += 0.5;
+
+  return round2(clamp(score, 1, 5));
+}
+
+/** Derives an observed risk category from realised losses only. */
 export function observedCategory(a: ActualMetrics): Category {
-  let points = 0;
-  if (a.fraud_rate > 1) points += 2;
-  else if (a.fraud_rate > THRESHOLDS.fraud_high) points += 1;
-
-  if (a.chargebacks > 1.5) points += 2;
-  else if (a.chargebacks > THRESHOLDS.chargeback_high) points += 1;
-
-  if (a.refunds > 15) points += 2;
-  else if (a.refunds > THRESHOLDS.refund_high) points += 1;
-
-  if (a.geo_behavior === "Significant drift") points += 2;
-  else if (a.geo_behavior === "Minor drift") points += 1;
-
-  if (points === 0) return "LOW";
-  if (points <= 2) return "MEDIUM";
+  const p = observedPerformanceScore(a);
+  if (p <= 2.0) return "LOW";
+  if (p <= 3.0) return "MEDIUM";
   return "HIGH";
+}
+
+export interface Stage2Evaluation {
+  performance_score: number;
+  performance_healthy: boolean;
+  actual_outcome: Category;
+  variance: Variance;
+  stage1_total: number;
+  recalculated_total: number;
+  /** True when an upward recalculation was suppressed by the performance-first rule. */
+  capped: boolean;
+  geo_drift: ActualMetrics["geo_behavior"];
+  note: string;
+}
+
+/**
+ * Performance-first override: the total risk score may only rise when the
+ * observed Historical Performance score rises above the Stage 1 score.
+ * Geographic drift alone never pushes the total upward while performance is
+ * healthy (performance score ≤ 3.0) — Stage 1 remains the ceiling.
+ */
+export function evaluateStage2(assessment: Assessment, a: ActualMetrics): Stage2Evaluation {
+  const performance = observedPerformanceScore(a);
+  const healthy = performance <= 3.0;
+  const stage1Historical = assessment.scores.historical.score;
+  const stage1Total = assessment.total_score;
+
+  const performanceWorsened = performance > stage1Historical;
+  const rescored = round2(
+    stage1Total + (performance - stage1Historical) * WEIGHTS.historical,
+  );
+
+  let recalculated = stage1Total;
+  let capped = false;
+  let note = "Performance in line with Stage 1 — score unchanged.";
+
+  if (performanceWorsened) {
+    recalculated = round2(clamp(rescored, 1, 5));
+    note = `Realised losses worsened (performance ${stage1Historical.toFixed(2)} → ${performance.toFixed(2)}) — score recalculated upward.`;
+  } else if (healthy && a.geo_behavior !== "As expected") {
+    capped = true;
+    note = `Geographic drift observed (${a.geo_behavior}) but performance is healthy (${performance.toFixed(2)} ≤ 3.0) — Stage 1 score held as the ceiling.`;
+  } else if (performance < stage1Historical) {
+    recalculated = round2(clamp(rescored, 1, 5));
+    note = `Performance better than predicted (${stage1Historical.toFixed(2)} → ${performance.toFixed(2)}) — score revised downward.`;
+  }
+
+  const outcome = observedCategory(a);
+  const cappedOutcome: Category =
+    capped && CATEGORY_RANK[outcome] > CATEGORY_RANK[assessment.category]
+      ? assessment.category
+      : outcome;
+
+  return {
+    performance_score: performance,
+    performance_healthy: healthy,
+    actual_outcome: cappedOutcome,
+    variance: compareStage2(assessment.category, cappedOutcome),
+    stage1_total: stage1Total,
+    recalculated_total: recalculated,
+    capped,
+    geo_drift: a.geo_behavior,
+    note,
+  };
 }
 
 export function compareStage2(expected: Category, actual: Category): Variance {
@@ -651,6 +712,7 @@ export function compareStage2(expected: Category, actual: Category): Variance {
   if (d === 0) return "ACCURATE";
   return d < 0 ? "FALSE POSITIVE" : "UNDER-ESTIMATED RISK";
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Stage 3 — decision engine                                           */
