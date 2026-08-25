@@ -388,10 +388,17 @@ function MerchantDetail() {
               <p className="label-caps">Legitimacy</p>
               <p className="mt-1 text-sm font-semibold text-risk-low">{r.legitimacy_status}</p>
               <div className="mt-4">
+                <Row label="UBO country" value={m.merchant_country} />
+                <Row label="Operating country" value={m.operating_country} />
+                <Row
+                  label="Geographic consistency"
+                  value={m.merchant_country === m.operating_country ? "Aligned" : "Mismatch (+0.5)"}
+                />
                 <Row label="Email" value={m.merchant_email || "—"} />
                 <Row label="Website" value={m.merchant_website || "—"} />
                 <Row label="Email domain type" value={m.email_domain_type ?? "—"} />
                 <Row label="IP fraud score" value={m.ip_fraud_score} />
+
                 <Row
                   label="Stripe connected account"
                   value={m.stripe_account_exists === false ? "No" : "Yes"}
