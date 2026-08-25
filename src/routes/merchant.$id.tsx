@@ -436,15 +436,6 @@ function MerchantDetail() {
             </section>
 
             <section className="panel p-6">
-              <p className="label-caps">Customer distribution</p>
-              <div className="mt-3">
-                {m.customer_distribution.map((c, i) => (
-                  <Row key={i} label={c.country} value={`${c.percentage}%`} />
-                ))}
-              </div>
-            </section>
-
-            <section className="panel p-6">
               <p className="label-caps">Dashboard output (JSON)</p>
               <pre className="mt-3 max-h-72 overflow-auto rounded-lg bg-background p-3 font-mono text-[11px] text-muted-foreground">
                 {JSON.stringify(
@@ -452,6 +443,13 @@ function MerchantDetail() {
                     merchant_name: m.name,
                     stage: r.stage,
                     legitimacy_status: r.legitimacy_status,
+                    geographic_consistency: {
+                      ubo_country: m.merchant_country,
+                      operating_country: m.operating_country,
+                      match: m.merchant_country === m.operating_country,
+                      mismatch_penalty: m.merchant_country === m.operating_country ? 0 : 0.5,
+                      score: assessment.scores.merchant_country.score,
+                    },
                     scores: Object.fromEntries(
                       Object.entries(assessment.scores).map(([k, v]) => [k, v.score]),
                     ),
@@ -463,6 +461,12 @@ function MerchantDetail() {
                           expected_risk: assessment.category,
                           actual_outcome: r.stage2.actual_outcome,
                           variance: r.stage2.variance,
+                          observed_performance_score: r.stage2.performance_score ?? null,
+                          stage1_total: assessment.total_score,
+                          recalculated_total: r.stage2.recalculated_total ?? assessment.total_score,
+                          performance_first_cap_applied: r.stage2.capped ?? false,
+                          geo_behavior: r.stage2.actual_metrics.geo_behavior,
+                          note: r.stage2.note ?? null,
                         }
                       : null,
                     final_decision: r.final_decision,
@@ -475,6 +479,7 @@ function MerchantDetail() {
           </aside>
         </div>
       )}
+
     </main>
   );
 }
