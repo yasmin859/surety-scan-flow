@@ -163,7 +163,12 @@ export interface MerchantRecord {
     actual_metrics: ActualMetrics;
     actual_outcome: Category;
     variance: Variance;
+    performance_score?: number;
+    recalculated_total?: number;
+    capped?: boolean;
+    note?: string;
   } | null;
+
   final_decision: string | null;
   /** Operational only — excluded from scoring. */
   account_health?: AccountHealth;
