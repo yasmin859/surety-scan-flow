@@ -18,14 +18,14 @@ import { ScoreBreakdown } from "@/components/score-breakdown";
 import { AccountHealthCard } from "@/components/account-health-card";
 import { deleteRecord, getRecord, upsertRecord } from "@/lib/records-store";
 import {
-  compareStage2,
   decide,
-  observedCategory,
+  evaluateStage2,
   EMPTY_ACCOUNT_HEALTH,
   type AccountHealth,
   type ActualMetrics,
   type MerchantRecord,
 } from "@/lib/risk-engine";
+
 
 export const Route = createFileRoute("/merchant/$id")({
   head: () => ({
@@ -107,18 +107,26 @@ function MerchantDetail() {
 
   const saveStage2 = () => {
     if (!assessment) return;
-    const actual = observedCategory(metrics);
-    const variance = compareStage2(assessment.category, actual);
+    const evaluation = evaluateStage2(assessment, metrics);
     const updated: MerchantRecord = {
       ...r,
       stage: 2,
-      stage2: { actual_metrics: metrics, actual_outcome: actual, variance },
+      stage2: {
+        actual_metrics: metrics,
+        actual_outcome: evaluation.actual_outcome,
+        variance: evaluation.variance,
+        performance_score: evaluation.performance_score,
+        recalculated_total: evaluation.recalculated_total,
+        capped: evaluation.capped,
+        note: evaluation.note,
+      },
       final_decision: null,
     };
     upsertRecord(updated);
     setRecord(updated);
     toast.success("Monitoring outcome recorded");
   };
+
 
   const finalise = () => {
     if (!assessment || !r.stage2) return;
@@ -224,9 +232,11 @@ function MerchantDetail() {
             <section className="panel p-6">
               <h2 className="text-lg font-semibold">Stage 2 — monitoring validation</h2>
               <p className="mb-4 text-sm text-muted-foreground">
-                Record observed behaviour during the monitoring window and compare it to the expected
-                risk.
+                Performance-first: the total score can only rise if realised losses — fraud and
+                chargebacks — worsen. Geographic drift alone never pushes the score above the Stage 1
+                ceiling while performance stays healthy.
               </p>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label className="label-caps">Fraud rate (%)</Label>
@@ -291,7 +301,7 @@ function MerchantDetail() {
               </Button>
 
               {r.stage2 && (
-                <div className="mt-5 rounded-lg border border-border bg-surface-strong/60 p-4">
+                <div className="mt-5 space-y-4 rounded-lg border border-border bg-surface-strong/60 p-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-sm text-muted-foreground">Expected</span>
                     <RiskBadge category={assessment.category} size="sm" />
@@ -299,8 +309,48 @@ function MerchantDetail() {
                     <RiskBadge category={r.stage2.actual_outcome} size="sm" />
                     <VarianceBadge variance={r.stage2.variance} />
                   </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div>
+                      <p className="label-caps">Observed performance</p>
+                      <p className="mt-1 font-mono text-lg font-semibold">
+                        {(r.stage2.performance_score ?? 0).toFixed(2)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="label-caps">Stage 1 total</p>
+                      <p className="mt-1 font-mono text-lg font-semibold">
+                        {assessment.total_score.toFixed(2)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="label-caps">Stage 2 total</p>
+                      <p className="mt-1 font-mono text-lg font-semibold">
+                        {(r.stage2.recalculated_total ?? assessment.total_score).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`rounded-lg border p-4 ${
+                      (r.stage2.performance_score ?? 0) > 3
+                        ? "border-risk-red/45 bg-risk-red/10 text-risk-red"
+                        : "border-risk-low/40 bg-risk-low/10 text-risk-low"
+                    }`}
+                  >
+                    <p className="label-caps">Risk drivers — actual performance</p>
+                    <ul className="mt-2 space-y-1 text-sm">
+                      <li>
+                        Fraud losses: {r.stage2.actual_metrics.fraud_rate}% · Chargeback losses:{" "}
+                        {r.stage2.actual_metrics.chargebacks}% · Refunds:{" "}
+                        {r.stage2.actual_metrics.refunds}%
+                      </li>
+                      <li className="opacity-90">{r.stage2.note}</li>
+                    </ul>
+                  </div>
                 </div>
               )}
+
             </section>
 
             <section className="panel p-6">
@@ -338,10 +388,17 @@ function MerchantDetail() {
               <p className="label-caps">Legitimacy</p>
               <p className="mt-1 text-sm font-semibold text-risk-low">{r.legitimacy_status}</p>
               <div className="mt-4">
+                <Row label="UBO country" value={m.merchant_country} />
+                <Row label="Operating country" value={m.operating_country} />
+                <Row
+                  label="Geographic consistency"
+                  value={m.merchant_country === m.operating_country ? "Aligned" : "Mismatch (+0.5)"}
+                />
                 <Row label="Email" value={m.merchant_email || "—"} />
                 <Row label="Website" value={m.merchant_website || "—"} />
                 <Row label="Email domain type" value={m.email_domain_type ?? "—"} />
                 <Row label="IP fraud score" value={m.ip_fraud_score} />
+
                 <Row
                   label="Stripe connected account"
                   value={m.stripe_account_exists === false ? "No" : "Yes"}
@@ -379,15 +436,6 @@ function MerchantDetail() {
             </section>
 
             <section className="panel p-6">
-              <p className="label-caps">Customer distribution</p>
-              <div className="mt-3">
-                {m.customer_distribution.map((c, i) => (
-                  <Row key={i} label={c.country} value={`${c.percentage}%`} />
-                ))}
-              </div>
-            </section>
-
-            <section className="panel p-6">
               <p className="label-caps">Dashboard output (JSON)</p>
               <pre className="mt-3 max-h-72 overflow-auto rounded-lg bg-background p-3 font-mono text-[11px] text-muted-foreground">
                 {JSON.stringify(
@@ -395,6 +443,13 @@ function MerchantDetail() {
                     merchant_name: m.name,
                     stage: r.stage,
                     legitimacy_status: r.legitimacy_status,
+                    geographic_consistency: {
+                      ubo_country: m.merchant_country,
+                      operating_country: m.operating_country,
+                      match: m.merchant_country === m.operating_country,
+                      mismatch_penalty: m.merchant_country === m.operating_country ? 0 : 0.5,
+                      score: assessment.scores.merchant_country.score,
+                    },
                     scores: Object.fromEntries(
                       Object.entries(assessment.scores).map(([k, v]) => [k, v.score]),
                     ),
@@ -406,6 +461,12 @@ function MerchantDetail() {
                           expected_risk: assessment.category,
                           actual_outcome: r.stage2.actual_outcome,
                           variance: r.stage2.variance,
+                          observed_performance_score: r.stage2.performance_score ?? null,
+                          stage1_total: assessment.total_score,
+                          recalculated_total: r.stage2.recalculated_total ?? assessment.total_score,
+                          performance_first_cap_applied: r.stage2.capped ?? false,
+                          geo_behavior: r.stage2.actual_metrics.geo_behavior,
+                          note: r.stage2.note ?? null,
                         }
                       : null,
                     final_decision: r.final_decision,
@@ -418,6 +479,7 @@ function MerchantDetail() {
           </aside>
         </div>
       )}
+
     </main>
   );
 }

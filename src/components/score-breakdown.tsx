@@ -2,13 +2,12 @@ import type { Assessment } from "@/lib/risk-engine";
 import { WEIGHTS } from "@/lib/risk-engine";
 
 const ROWS: { key: keyof Assessment["scores"]; label: string; weight: number }[] = [
-  { key: "merchant_country", label: "Merchant country", weight: WEIGHTS.merchant_country },
-  { key: "customer_exposure", label: "Customer exposure", weight: WEIGHTS.customer_exposure },
-  { key: "industry_product", label: "Industry / product", weight: WEIGHTS.industry_product },
+  { key: "merchant_country", label: "Geographic consistency", weight: WEIGHTS.merchant_country },
+  { key: "industry_product", label: "Industry / product risk", weight: WEIGHTS.industry_product },
   { key: "business_model", label: "Business model", weight: WEIGHTS.business_model },
-  { key: "fraud_signals", label: "IP & email quality", weight: WEIGHTS.fraud_signals },
   { key: "historical", label: "Historical performance", weight: WEIGHTS.historical },
   { key: "business_maturity", label: "Business maturity", weight: WEIGHTS.business_maturity },
+  { key: "fraud_signals", label: "IP & email quality", weight: WEIGHTS.fraud_signals },
 ];
 
 export function ScoreBreakdown({ assessment }: { assessment: Assessment }) {
@@ -44,9 +43,9 @@ export function ScoreBreakdown({ assessment }: { assessment: Assessment }) {
                 <li key={i} className="flex justify-between gap-4 font-mono text-xs text-muted-foreground">
                   <span>{l.label}</span>
                   <span className={l.value < 0 ? "text-risk-low" : ""}>
-                    {i === 0 && l.value > 0 && !l.label.startsWith("Base") && !l.label.startsWith("Baseline")
+                    {i === 0
                       ? l.value.toFixed(2)
-                      : `${l.value > 0 && i > 0 ? "+" : ""}${l.value.toFixed(2)}`}
+                      : `${l.value > 0 ? "+" : ""}${l.value.toFixed(2)}`}
                   </span>
                 </li>
               ))}
