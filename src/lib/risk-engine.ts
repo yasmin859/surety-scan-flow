@@ -55,9 +55,10 @@ export interface Merchant {
   name: string;
   merchant_email: string;
   merchant_website: string;
+  /** Country of the ultimate beneficial owner (UBO). */
   merchant_country: string;
   operating_country: string;
-  customer_distribution: CustomerCountry[];
+
   industry: string;
   email_domain_type: EmailDomainType;
   ip_fraud_score: number;
@@ -136,13 +137,13 @@ export interface ComponentScore {
 export interface Assessment {
   scores: {
     merchant_country: ComponentScore;
-    customer_exposure: ComponentScore;
     industry_product: ComponentScore;
     business_model: ComponentScore;
     fraud_signals: ComponentScore;
     historical: ComponentScore;
     business_maturity: ComponentScore;
   };
+
   total_score: number;
   category: Category;
   monitoring_days: string;
@@ -297,14 +298,14 @@ export function industryDef(name: string): IndustryDef {
 export const STRIPE_RESTRICTED_URL = "https://stripe.com/ie/legal/restricted-businesses";
 
 export const WEIGHTS = {
-  merchant_country: 0.16,
-  customer_exposure: 0.16,
-  industry_product: 0.2,
+  merchant_country: 0.18,
+  industry_product: 0.25,
   business_model: 0.05,
   fraud_signals: 0.12,
-  historical: 0.14,
-  business_maturity: 0.17,
+  historical: 0.2,
+  business_maturity: 0.2,
 } as const;
+
 
 /** Thresholds used for "high" flags in historical, AOV and fraud-signal scoring. */
 export const THRESHOLDS = {
