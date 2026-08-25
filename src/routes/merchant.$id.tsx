@@ -107,18 +107,26 @@ function MerchantDetail() {
 
   const saveStage2 = () => {
     if (!assessment) return;
-    const actual = observedCategory(metrics);
-    const variance = compareStage2(assessment.category, actual);
+    const evaluation = evaluateStage2(assessment, metrics);
     const updated: MerchantRecord = {
       ...r,
       stage: 2,
-      stage2: { actual_metrics: metrics, actual_outcome: actual, variance },
+      stage2: {
+        actual_metrics: metrics,
+        actual_outcome: evaluation.actual_outcome,
+        variance: evaluation.variance,
+        performance_score: evaluation.performance_score,
+        recalculated_total: evaluation.recalculated_total,
+        capped: evaluation.capped,
+        note: evaluation.note,
+      },
       final_decision: null,
     };
     upsertRecord(updated);
     setRecord(updated);
     toast.success("Monitoring outcome recorded");
   };
+
 
   const finalise = () => {
     if (!assessment || !r.stage2) return;
