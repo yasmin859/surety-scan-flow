@@ -40,10 +40,6 @@ export const EMAIL_DOMAIN_SCORE: Record<EmailDomainType, number> = {
 export type Category = "LOW" | "MEDIUM" | "HIGH" | "REJECTED";
 export type Variance = "ACCURATE" | "FALSE POSITIVE" | "UNDER-ESTIMATED RISK";
 
-export interface CustomerCountry {
-  country: string;
-  percentage: number;
-}
 
 export interface MerchantTicket {
   id: string;
