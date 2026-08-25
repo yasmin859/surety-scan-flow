@@ -278,13 +278,14 @@ function NewAssessment() {
                       placeholder="https://acme.com"
                     />
                   </Field>
-                  <Field label="Merchant country">
+                  <Field label="UBO country">
                     <Picker
                       value={m.merchant_country}
                       onChange={(v) => set("merchant_country", v)}
                       options={COUNTRIES}
                     />
                   </Field>
+
                   <Field label="Operating country">
                     <Picker
                       value={m.operating_country}
