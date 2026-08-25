@@ -415,7 +415,7 @@ function NewAssessment() {
           </SectionCard>
 
           <SectionCard
-            step="STEP 3"
+            step="STEP 2"
             title="Customer exposure"
             subtitle="Top 5 countries by volume are used for the weighted exposure score."
           >
@@ -479,7 +479,7 @@ function NewAssessment() {
             </div>
           </SectionCard>
 
-          <SectionCard step="STEP 4" title="Product & business model">
+          <SectionCard step="STEP 3" title="Product & business model">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Product type">
                 <Picker<ProductType>
@@ -513,7 +513,7 @@ function NewAssessment() {
             </div>
           </SectionCard>
 
-          <SectionCard step="STEP 5" title="History & maturity">
+          <SectionCard step="STEP 4" title="History & maturity">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Processing history">
                 <Picker<ProcessingHistory>
@@ -563,7 +563,7 @@ function NewAssessment() {
           </SectionCard>
 
           <SectionCard
-            step="STEP 6"
+            step="STEP 5"
             title="Tickets & internal notes"
             subtitle="Internal context only — not part of the weighted score."
           >
