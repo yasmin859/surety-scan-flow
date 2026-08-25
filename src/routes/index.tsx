@@ -64,10 +64,7 @@ function Dashboard() {
             <Activity className="size-3.5 text-primary" /> Risk assessment engine
           </p>
           <h1 className="mt-2 text-4xl font-bold">Merchant onboarding portfolio</h1>
-          <p className="mt-2 max-w-2xl text-muted-foreground">
-            Legitimacy gating, weighted risk scoring, monitoring windows and a three-stage lifecycle —
-            every score fully explainable and auditable.
-          </p>
+
         </div>
         <div className="flex items-center gap-2">
           <Button asChild size="lg">
