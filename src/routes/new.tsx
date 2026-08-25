@@ -28,7 +28,6 @@ import {
   runAssessment,
   type BusinessMaturity,
   type BusinessModel,
-  type CustomerCountry,
   type DeliveryType,
   type Legitimacy,
   type Merchant,
@@ -441,7 +440,7 @@ function NewAssessment() {
             </div>
           </SectionCard>
 
-          <SectionCard step="STEP 4" title="History & maturity">
+          <SectionCard step="STEP 3" title="History & maturity">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Processing history">
                 <Picker<ProcessingHistory>
@@ -491,7 +490,7 @@ function NewAssessment() {
           </SectionCard>
 
           <SectionCard
-            step="STEP 5"
+            step="STEP 4"
             title="Tickets & internal notes"
             subtitle="Internal context only — not part of the weighted score."
           >
