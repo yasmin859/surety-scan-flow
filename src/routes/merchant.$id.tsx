@@ -301,7 +301,7 @@ function MerchantDetail() {
               </Button>
 
               {r.stage2 && (
-                <div className="mt-5 rounded-lg border border-border bg-surface-strong/60 p-4">
+                <div className="mt-5 space-y-4 rounded-lg border border-border bg-surface-strong/60 p-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-sm text-muted-foreground">Expected</span>
                     <RiskBadge category={assessment.category} size="sm" />
@@ -309,8 +309,48 @@ function MerchantDetail() {
                     <RiskBadge category={r.stage2.actual_outcome} size="sm" />
                     <VarianceBadge variance={r.stage2.variance} />
                   </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div>
+                      <p className="label-caps">Observed performance</p>
+                      <p className="mt-1 font-mono text-lg font-semibold">
+                        {(r.stage2.performance_score ?? 0).toFixed(2)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="label-caps">Stage 1 total</p>
+                      <p className="mt-1 font-mono text-lg font-semibold">
+                        {assessment.total_score.toFixed(2)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="label-caps">Stage 2 total</p>
+                      <p className="mt-1 font-mono text-lg font-semibold">
+                        {(r.stage2.recalculated_total ?? assessment.total_score).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`rounded-lg border p-4 ${
+                      (r.stage2.performance_score ?? 0) > 3
+                        ? "border-risk-red/45 bg-risk-red/10 text-risk-red"
+                        : "border-risk-low/40 bg-risk-low/10 text-risk-low"
+                    }`}
+                  >
+                    <p className="label-caps">Risk drivers — actual performance</p>
+                    <ul className="mt-2 space-y-1 text-sm">
+                      <li>
+                        Fraud losses: {r.stage2.actual_metrics.fraud_rate}% · Chargeback losses:{" "}
+                        {r.stage2.actual_metrics.chargebacks}% · Refunds:{" "}
+                        {r.stage2.actual_metrics.refunds}%
+                      </li>
+                      <li className="opacity-90">{r.stage2.note}</li>
+                    </ul>
+                  </div>
                 </div>
               )}
+
             </section>
 
             <section className="panel p-6">
