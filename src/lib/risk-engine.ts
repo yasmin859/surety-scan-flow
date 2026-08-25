@@ -634,12 +634,10 @@ export function runAssessment(m: Merchant): Assessment {
   // Interaction adjustment: new merchants without processing history should not be
   // double-penalised by the maturity and historical components simultaneously.
   const newAndNoHistory = m.business_maturity === "<1 year" && m.processing_history === "No history";
-  let adjustedTotal = round2(newAndNoHistory ? Math.max(1, total - 0.3) : total);
+  const adjustedTotal = round2(newAndNoHistory ? Math.max(1, total - 0.3) : total);
 
-  // Process-stage adjustment: no Stripe connected account yet (timing, not fraud).
-  if (m.stripe_account_exists === false) {
-    adjustedTotal = round2(Math.min(5, adjustedTotal + 2));
-  }
+  // Stripe connected account is tracked for operations only — it never affects the score.
+
 
   const industryGate = checkIndustry(m.industry);
   const category: Category = industryGate.rejected ? "REJECTED" : categorise(adjustedTotal);
