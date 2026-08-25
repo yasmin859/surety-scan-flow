@@ -232,9 +232,11 @@ function MerchantDetail() {
             <section className="panel p-6">
               <h2 className="text-lg font-semibold">Stage 2 — monitoring validation</h2>
               <p className="mb-4 text-sm text-muted-foreground">
-                Record observed behaviour during the monitoring window and compare it to the expected
-                risk.
+                Performance-first: the total score can only rise if realised losses — fraud and
+                chargebacks — worsen. Geographic drift alone never pushes the score above the Stage 1
+                ceiling while performance stays healthy.
               </p>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label className="label-caps">Fraud rate (%)</Label>
