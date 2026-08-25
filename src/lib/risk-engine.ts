@@ -500,9 +500,9 @@ function scoreFraudSignals(m: Merchant): ComponentScore {
 /* ------------------------------------------------------------------ */
 
 const HISTORY_SCORE: Record<ProcessingHistory, number> = {
-  "No history": 5,
-  "<6 months": 4,
-  "6-12 months": 3,
+  "No history": 3,
+  "<6 months": 3,
+  "6-12 months": 2.5,
   "1-3 years": 2,
   "3+ years": 1,
 };
@@ -539,15 +539,16 @@ function scoreHistorical(m: Merchant): ComponentScore {
 }
 
 /* ------------------------------------------------------------------ */
-/* 4.7 Business maturity                                               */
+/* Factor 6 — Business maturity                                        */
 /* ------------------------------------------------------------------ */
 
 const MATURITY_SCORE: Record<BusinessMaturity, number> = {
   MVP: 5,
-  "<1 year": 3,
-  "1-3 years": 2,
-  "3+ years": 1,
+  "<1 year": 4,
+  "1-3 years": 3,
+  "3+ years": 2,
 };
+
 
 function scoreMaturity(m: Merchant): ComponentScore {
   const score = MATURITY_SCORE[m.business_maturity];
