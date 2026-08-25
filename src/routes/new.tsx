@@ -239,53 +239,13 @@ function NewAssessment() {
 
       <h1 className="mt-4 text-3xl font-bold">New merchant assessment</h1>
       <p className="mt-1 text-muted-foreground">
-        Stage 1 — legitimacy gate, weighted scoring, risk level and monitoring assignment.
+        Stage 1 — weighted scoring, risk level and monitoring assignment.
       </p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="space-y-6">
-          <SectionCard
-            step="STEP 1"
-            title="Legitimacy check"
-            subtitle="Hard gate — any failure rejects the merchant and stops scoring."
-          >
-            <div className="grid gap-3 sm:grid-cols-2">
-              {legitFields.map((f) => (
-                <div
-                  key={f.key}
-                  className="flex items-center justify-between rounded-lg border border-border bg-surface-strong/60 px-4 py-3"
-                >
-                  <span className="text-sm">{f.label}</span>
-                  <Switch
-                    checked={legit[f.key]}
-                    onCheckedChange={(v) => setLegit((p) => ({ ...p, [f.key]: v }))}
-                  />
-                </div>
-              ))}
-            </div>
+          <SectionCard step="STEP 1" title="Merchant profile">
 
-            <div
-              className={`mt-4 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${
-                gate.passed
-                  ? "border-risk-low/40 bg-risk-low/10 text-risk-low"
-                  : "border-risk-red/45 bg-risk-red/10 text-risk-red"
-              }`}
-            >
-              {gate.passed ? (
-                <ShieldCheck className="mt-0.5 size-4 shrink-0" />
-              ) : (
-                <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-              )}
-              <div>
-                <p className="font-semibold">{gate.status}</p>
-                {!gate.passed && (
-                  <p className="mt-1 text-xs opacity-90">Failed: {gate.failures.join(", ")}</p>
-                )}
-              </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard step="STEP 2" title="Merchant profile">
             <div className="space-y-4">
               <SubBox title="Merchant details">
                 <div className="grid gap-4 sm:grid-cols-2">
