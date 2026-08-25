@@ -239,53 +239,13 @@ function NewAssessment() {
 
       <h1 className="mt-4 text-3xl font-bold">New merchant assessment</h1>
       <p className="mt-1 text-muted-foreground">
-        Stage 1 — legitimacy gate, weighted scoring, risk level and monitoring assignment.
+        Stage 1 — weighted scoring, risk level and monitoring assignment.
       </p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="space-y-6">
-          <SectionCard
-            step="STEP 1"
-            title="Legitimacy check"
-            subtitle="Hard gate — any failure rejects the merchant and stops scoring."
-          >
-            <div className="grid gap-3 sm:grid-cols-2">
-              {legitFields.map((f) => (
-                <div
-                  key={f.key}
-                  className="flex items-center justify-between rounded-lg border border-border bg-surface-strong/60 px-4 py-3"
-                >
-                  <span className="text-sm">{f.label}</span>
-                  <Switch
-                    checked={legit[f.key]}
-                    onCheckedChange={(v) => setLegit((p) => ({ ...p, [f.key]: v }))}
-                  />
-                </div>
-              ))}
-            </div>
+          <SectionCard step="STEP 1" title="Merchant profile">
 
-            <div
-              className={`mt-4 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${
-                gate.passed
-                  ? "border-risk-low/40 bg-risk-low/10 text-risk-low"
-                  : "border-risk-red/45 bg-risk-red/10 text-risk-red"
-              }`}
-            >
-              {gate.passed ? (
-                <ShieldCheck className="mt-0.5 size-4 shrink-0" />
-              ) : (
-                <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-              )}
-              <div>
-                <p className="font-semibold">{gate.status}</p>
-                {!gate.passed && (
-                  <p className="mt-1 text-xs opacity-90">Failed: {gate.failures.join(", ")}</p>
-                )}
-              </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard step="STEP 2" title="Merchant profile">
             <div className="space-y-4">
               <SubBox title="Merchant details">
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -355,27 +315,37 @@ function NewAssessment() {
                 )}
               </SubBox>
 
-              <SubBox title="Stripe connected account">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-medium">Stripe connected account exists?</p>
-                    <p className="text-xs text-muted-foreground">
-                      No connected account adds +2 to the total score (process stage, not fraud).
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {m.stripe_account_exists ? "Yes" : "No"}
-                    </span>
-                    <Switch
-                      checked={m.stripe_account_exists}
-                      onCheckedChange={(v) => {
-                        set("stripe_account_exists", v);
-                        if (!v) set("stripe_account_link", "");
-                      }}
-                    />
+              <SubBox title="Business verification & Stripe account">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {legitFields.map((f) => (
+                    <div
+                      key={f.key}
+                      className="flex items-center justify-between rounded-lg border border-border bg-background/40 px-4 py-3"
+                    >
+                      <span className="text-sm">{f.label}</span>
+                      <Switch
+                        checked={legit[f.key]}
+                        onCheckedChange={(v) => setLegit((p) => ({ ...p, [f.key]: v }))}
+                      />
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between rounded-lg border border-border bg-background/40 px-4 py-3">
+                    <span className="text-sm">Stripe connected account</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {m.stripe_account_exists ? "Yes" : "No"}
+                      </span>
+                      <Switch
+                        checked={m.stripe_account_exists}
+                        onCheckedChange={(v) => {
+                          set("stripe_account_exists", v);
+                          if (!v) set("stripe_account_link", "");
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
+
                 {m.stripe_account_exists && (
                   <div className="mt-4">
                     <Field label="Connected account link">
@@ -387,7 +357,32 @@ function NewAssessment() {
                     </Field>
                   </div>
                 )}
+
+                <div
+                  className={`mt-4 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${
+                    gate.passed
+                      ? "border-risk-low/40 bg-risk-low/10 text-risk-low"
+                      : "border-risk-red/45 bg-risk-red/10 text-risk-red"
+                  }`}
+                >
+                  {gate.passed ? (
+                    <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+                  ) : (
+                    <ShieldAlert className="mt-0.5 size-4 shrink-0" />
+                  )}
+                  <div>
+                    <p className="font-semibold">{gate.status}</p>
+                    {!gate.passed && (
+                      <p className="mt-1 text-xs opacity-90">Failed: {gate.failures.join(", ")}</p>
+                    )}
+                    <p className="mt-1 text-xs opacity-80">
+                      Stripe connected account is tracked for operations only — it does not affect the
+                      risk score.
+                    </p>
+                  </div>
+                </div>
               </SubBox>
+
 
               <SubBox title="IP & email quality check">
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -420,7 +415,7 @@ function NewAssessment() {
           </SectionCard>
 
           <SectionCard
-            step="STEP 3"
+            step="STEP 2"
             title="Customer exposure"
             subtitle="Top 5 countries by volume are used for the weighted exposure score."
           >
@@ -484,7 +479,7 @@ function NewAssessment() {
             </div>
           </SectionCard>
 
-          <SectionCard step="STEP 4" title="Product & business model">
+          <SectionCard step="STEP 3" title="Product & business model">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Product type">
                 <Picker<ProductType>
@@ -518,7 +513,7 @@ function NewAssessment() {
             </div>
           </SectionCard>
 
-          <SectionCard step="STEP 5" title="History & maturity">
+          <SectionCard step="STEP 4" title="History & maturity">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Processing history">
                 <Picker<ProcessingHistory>
@@ -568,7 +563,7 @@ function NewAssessment() {
           </SectionCard>
 
           <SectionCard
-            step="STEP 6"
+            step="STEP 5"
             title="Tickets & internal notes"
             subtitle="Internal context only — not part of the weighted score."
           >
