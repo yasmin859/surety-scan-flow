@@ -363,56 +363,23 @@ export function checkIndustry(industry: string): { rejected: boolean; reason?: s
 }
 
 /* ------------------------------------------------------------------ */
-/* 4.1 Merchant country                                                */
+/* Factor 1 — Geographic consistency (UBO country vs operating country) */
 /* ------------------------------------------------------------------ */
 
-function scoreMerchantCountry(m: Merchant): ComponentScore {
+function scoreGeographicConsistency(m: Merchant): ComponentScore {
   const base = countryScore(m.merchant_country);
-  const lines: ScoreLine[] = [{ label: `Base country risk (${m.merchant_country})`, value: base }];
+  const lines: ScoreLine[] = [{ label: `UBO country risk tier (${m.merchant_country})`, value: base }];
   let score = base;
   if (m.merchant_country !== m.operating_country) {
     score += 0.5;
-    lines.push({ label: `Jurisdiction mismatch (operates in ${m.operating_country})`, value: 0.5 });
+    lines.push({
+      label: `UBO / operating mismatch (${m.merchant_country} ≠ ${m.operating_country})`,
+      value: 0.5,
+    });
   }
   return { score: round2(clamp(score, 1, 5)), lines };
 }
 
-/* ------------------------------------------------------------------ */
-/* 4.2 Customer exposure                                               */
-/* ------------------------------------------------------------------ */
-
-function scoreCustomerExposure(m: Merchant): ComponentScore {
-  const top5 = [...m.customer_distribution]
-    .sort((a, b) => b.percentage - a.percentage)
-    .slice(0, 5)
-    .filter((c) => c.country && c.percentage > 0);
-
-  const lines: ScoreLine[] = [];
-  if (top5.length === 0) {
-    return { score: 3, lines: [{ label: "No customer distribution provided (neutral)", value: 3 }] };
-  }
-
-  const totalPct = top5.reduce((s, c) => s + c.percentage, 0);
-  const weighted = top5.reduce((s, c) => s + countryScore(c.country) * (c.percentage / totalPct), 0);
-  let score = weighted;
-  lines.push({ label: `Weighted top-${top5.length} country exposure`, value: round2(weighted) });
-
-  const highRiskPct = top5
-    .filter((c) => countryScore(c.country) >= 4)
-    .reduce((s, c) => s + c.percentage, 0);
-  if (highRiskPct > 40) {
-    score += 0.5;
-    lines.push({ label: `${round2(highRiskPct)}% volume in high-risk countries (>40%)`, value: 0.5 });
-  }
-
-  const activeCountries = m.customer_distribution.filter((c) => c.country && c.percentage > 0).length;
-  if (activeCountries > 3) {
-    score += 0.3;
-    lines.push({ label: `Highly cross-border (${activeCountries} countries)`, value: 0.3 });
-  }
-
-  return { score: round2(clamp(score, 1, 5)), lines };
-}
 
 /* ------------------------------------------------------------------ */
 /* 4.3 Industry / product                                              */
