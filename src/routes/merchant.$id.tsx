@@ -344,7 +344,7 @@ function MerchantDetail() {
                 <Row label="IP fraud score" value={m.ip_fraud_score} />
                 <Row
                   label="Stripe connected account"
-                  value={m.stripe_account_exists === false ? "No (+2)" : "Yes"}
+                  value={m.stripe_account_exists === false ? "No" : "Yes"}
                 />
                 {m.stripe_account_exists && m.stripe_account_link && (
                   <Row label="Connected account link" value={m.stripe_account_link} />
