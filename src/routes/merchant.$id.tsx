@@ -18,14 +18,14 @@ import { ScoreBreakdown } from "@/components/score-breakdown";
 import { AccountHealthCard } from "@/components/account-health-card";
 import { deleteRecord, getRecord, upsertRecord } from "@/lib/records-store";
 import {
-  compareStage2,
   decide,
-  observedCategory,
+  evaluateStage2,
   EMPTY_ACCOUNT_HEALTH,
   type AccountHealth,
   type ActualMetrics,
   type MerchantRecord,
 } from "@/lib/risk-engine";
+
 
 export const Route = createFileRoute("/merchant/$id")({
   head: () => ({
