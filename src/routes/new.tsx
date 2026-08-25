@@ -315,27 +315,37 @@ function NewAssessment() {
                 )}
               </SubBox>
 
-              <SubBox title="Stripe connected account">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-medium">Stripe connected account exists?</p>
-                    <p className="text-xs text-muted-foreground">
-                      No connected account adds +2 to the total score (process stage, not fraud).
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {m.stripe_account_exists ? "Yes" : "No"}
-                    </span>
-                    <Switch
-                      checked={m.stripe_account_exists}
-                      onCheckedChange={(v) => {
-                        set("stripe_account_exists", v);
-                        if (!v) set("stripe_account_link", "");
-                      }}
-                    />
+              <SubBox title="Business verification & Stripe account">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {legitFields.map((f) => (
+                    <div
+                      key={f.key}
+                      className="flex items-center justify-between rounded-lg border border-border bg-background/40 px-4 py-3"
+                    >
+                      <span className="text-sm">{f.label}</span>
+                      <Switch
+                        checked={legit[f.key]}
+                        onCheckedChange={(v) => setLegit((p) => ({ ...p, [f.key]: v }))}
+                      />
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between rounded-lg border border-border bg-background/40 px-4 py-3">
+                    <span className="text-sm">Stripe connected account</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {m.stripe_account_exists ? "Yes" : "No"}
+                      </span>
+                      <Switch
+                        checked={m.stripe_account_exists}
+                        onCheckedChange={(v) => {
+                          set("stripe_account_exists", v);
+                          if (!v) set("stripe_account_link", "");
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
+
                 {m.stripe_account_exists && (
                   <div className="mt-4">
                     <Field label="Connected account link">
@@ -347,7 +357,32 @@ function NewAssessment() {
                     </Field>
                   </div>
                 )}
+
+                <div
+                  className={`mt-4 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${
+                    gate.passed
+                      ? "border-risk-low/40 bg-risk-low/10 text-risk-low"
+                      : "border-risk-red/45 bg-risk-red/10 text-risk-red"
+                  }`}
+                >
+                  {gate.passed ? (
+                    <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+                  ) : (
+                    <ShieldAlert className="mt-0.5 size-4 shrink-0" />
+                  )}
+                  <div>
+                    <p className="font-semibold">{gate.status}</p>
+                    {!gate.passed && (
+                      <p className="mt-1 text-xs opacity-90">Failed: {gate.failures.join(", ")}</p>
+                    )}
+                    <p className="mt-1 text-xs opacity-80">
+                      Stripe connected account is tracked for operations only — it does not affect the
+                      risk score.
+                    </p>
+                  </div>
+                </div>
               </SubBox>
+
 
               <SubBox title="IP & email quality check">
                 <div className="grid gap-4 sm:grid-cols-2">
