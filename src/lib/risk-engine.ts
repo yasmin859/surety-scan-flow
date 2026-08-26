@@ -367,17 +367,22 @@ export function checkIndustry(industry: string): { rejected: boolean; reason?: s
 /* ------------------------------------------------------------------ */
 
 function scoreGeographicConsistency(m: Merchant): ComponentScore {
-  const base = countryScore(m.merchant_country);
-  const lines: ScoreLine[] = [{ label: `UBO country risk tier (${m.merchant_country})`, value: base }];
-  let score = base;
-  if (m.merchant_country !== m.operating_country) {
-    score += 0.5;
-    lines.push({
-      label: `UBO / operating mismatch (${m.merchant_country} ≠ ${m.operating_country})`,
-      value: 0.5,
-    });
+  const matched = m.merchant_country === m.operating_country;
+  if (matched) {
+    return {
+      score: 1,
+      lines: [{ label: "UBO and Operations are in the same jurisdiction (Consistent)", value: 1 }],
+    };
   }
-  return { score: round2(clamp(score, 1, 5)), lines };
+  return {
+    score: 3,
+    lines: [
+      {
+        label: `Jurisdictional mismatch detected: UBO in ${m.merchant_country}, Operations in ${m.operating_country}. Complexity increased to 3.0`,
+        value: 3,
+      },
+    ],
+  };
 }
 
 
