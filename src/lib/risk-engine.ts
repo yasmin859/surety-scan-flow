@@ -175,62 +175,60 @@ export interface MerchantRecord {
 /* Reference data                                                      */
 /* ------------------------------------------------------------------ */
 
-/** Predefined country risk scores (1 = lowest risk, 5 = highest). */
-export const COUNTRY_RISK: Record<string, number> = {
-  "United Kingdom": 1,
-  Ireland: 1,
-  Germany: 1,
-  France: 1,
-  Netherlands: 1,
-  Sweden: 1,
-  Norway: 1,
-  Denmark: 1,
-  Switzerland: 1,
-  Austria: 1,
-  Belgium: 1,
-  Finland: 1,
-  Canada: 1,
-  Australia: 1,
-  "New Zealand": 1,
-  Japan: 1,
-  Singapore: 1,
-  "United States": 2,
-  Spain: 2,
-  Italy: 2,
-  Portugal: 2,
-  Poland: 2,
-  "Czech Republic": 2,
-  "South Korea": 2,
-  "United Arab Emirates": 3,
-  Malaysia: 3,
-  Romania: 3,
-  Bulgaria: 3,
-  Greece: 3,
-  Mexico: 3,
-  Chile: 3,
-  "Saudi Arabia": 3,
-  Israel: 3,
-  Brazil: 4,
-  India: 4,
-  Turkey: 4,
-  Indonesia: 4,
-  Philippines: 4,
-  "South Africa": 4,
-  Ukraine: 4,
-  Colombia: 4,
-  Egypt: 4,
-  Vietnam: 4,
-  Nigeria: 5,
-  Pakistan: 5,
-  Venezuela: 5,
-  Russia: 5,
-  Belarus: 5,
-  Iran: 5,
-  Myanmar: 5,
-  Cambodia: 5,
-};
-
-export const COUNTRIES = Object.keys(COUNTRY_RISK).sort();
+/** Country list for dropdowns. Country risk is no longer tied to nationality. */
+export const COUNTRIES = [
+  "Australia",
+  "Austria",
+  "Belgium",
+  "Belarus",
+  "Brazil",
+  "Bulgaria",
+  "Cambodia",
+  "Canada",
+  "Chile",
+  "Colombia",
+  "Czech Republic",
+  "Denmark",
+  "Egypt",
+  "Finland",
+  "France",
+  "Germany",
+  "Greece",
+  "India",
+  "Indonesia",
+  "Iran",
+  "Ireland",
+  "Israel",
+  "Italy",
+  "Japan",
+  "Malaysia",
+  "Mexico",
+  "Myanmar",
+  "Netherlands",
+  "New Zealand",
+  "Nigeria",
+  "Norway",
+  "Pakistan",
+  "Philippines",
+  "Poland",
+  "Portugal",
+  "Romania",
+  "Russia",
+  "Saudi Arabia",
+  "Singapore",
+  "South Africa",
+  "South Korea",
+  "Spain",
+  "Sweden",
+  "Switzerland",
+  "Turkey",
+  "Ukraine",
+  "United Arab Emirates",
+  "United Kingdom",
+  "United States",
+  "Venezuela",
+  "Vietnam",
+].sort();
 
 /**
  * Industry catalogue.
@@ -321,7 +319,8 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
 export function countryScore(country: string): number {
-  return COUNTRY_RISK[country] ?? 3;
+  // All countries now share the same neutral baseline.
+  return 2;
 }
 
 /* ------------------------------------------------------------------ */
@@ -368,17 +367,22 @@ export function checkIndustry(industry: string): { rejected: boolean; reason?: s
 /* ------------------------------------------------------------------ */
 
 function scoreGeographicConsistency(m: Merchant): ComponentScore {
-  const base = countryScore(m.merchant_country);
-  const lines: ScoreLine[] = [{ label: `UBO country risk tier (${m.merchant_country})`, value: base }];
-  let score = base;
-  if (m.merchant_country !== m.operating_country) {
-    score += 0.5;
-    lines.push({
-      label: `UBO / operating mismatch (${m.merchant_country} ≠ ${m.operating_country})`,
-      value: 0.5,
-    });
+  const matched = m.merchant_country === m.operating_country;
+  if (matched) {
+    return {
+      score: 1,
+      lines: [{ label: "UBO and Operations are in the same jurisdiction (Consistent)", value: 1 }],
+    };
   }
-  return { score: round2(clamp(score, 1, 5)), lines };
+  return {
+    score: 3,
+    lines: [
+      {
+        label: `Jurisdictional mismatch detected: UBO in ${m.merchant_country}, Operations in ${m.operating_country}. Complexity increased to 3.0`,
+        value: 3,
+      },
+    ],
+  };
 }
 
 
