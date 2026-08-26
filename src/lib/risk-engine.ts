@@ -457,37 +457,17 @@ export function ipSubScore(v: number): number {
   return 5;
 }
 
-/** Extracts a bare domain from an email address or website URL. */
-export function extractDomain(value: string): string {
-  const v = (value || "").trim().toLowerCase();
-  if (!v) return "";
-  const afterAt = v.includes("@") ? v.split("@").pop()! : v;
-  const host = afterAt.replace(/^[a-z]+:\/\//, "").split("/")[0]!.split("?")[0]!;
-  return host.replace(/^www\./, "").replace(/\.$/, "");
-}
-
 function scoreFraudSignals(m: Merchant): ComponentScore {
   const ipRaw = clamp(Number(m.ip_fraud_score) || 0, 0, 100);
   const ip = ipSubScore(ipRaw);
 
   const domainType: EmailDomainType = m.email_domain_type ?? "Other / less common free domain";
-  let email = EMAIL_DOMAIN_SCORE[domainType] ?? 3;
+  const email = EMAIL_DOMAIN_SCORE[domainType] ?? 3;
 
   const lines: ScoreLine[] = [
     { label: `IP fraud score ${ipRaw} → sub-score`, value: ip },
     { label: `Email domain: ${domainType}`, value: email },
   ];
-
-  const isFreeWebmail = domainType === "Major free webmail (Gmail, Outlook, Yahoo, iCloud)";
-  const emailDomain = extractDomain(m.merchant_email);
-  const siteDomain = extractDomain(m.merchant_website);
-  if (!isFreeWebmail && emailDomain && siteDomain && emailDomain !== siteDomain) {
-    email = Math.min(5, email + 1);
-    lines.push({
-      label: `Identity mismatch (${emailDomain} ≠ ${siteDomain})`,
-      value: 1,
-    });
-  }
 
   let score = Math.max(ip, email);
   lines.push({ label: "Combined (higher of IP / email)", value: score });
@@ -498,6 +478,7 @@ function scoreFraudSignals(m: Merchant): ComponentScore {
   }
 
   return { score: round2(clamp(score, 1, 5)), lines };
+}
 }
 
 /* ------------------------------------------------------------------ */
