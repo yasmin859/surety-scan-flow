@@ -319,7 +319,8 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
 export function countryScore(country: string): number {
-  return COUNTRY_RISK[country] ?? 3;
+  // All countries now share the same neutral baseline.
+  return 2;
 }
 
 /* ------------------------------------------------------------------ */
