@@ -447,8 +447,11 @@ function MerchantDetail() {
                       ubo_country: m.merchant_country,
                       operating_country: m.operating_country,
                       match: m.merchant_country === m.operating_country,
-                      mismatch_penalty: m.merchant_country === m.operating_country ? 0 : 0.5,
                       score: assessment.scores.merchant_country.score,
+                      rationale:
+                        m.merchant_country === m.operating_country
+                          ? "UBO and Operations are in the same jurisdiction (Consistent)."
+                          : `Jurisdictional mismatch detected: UBO in ${m.merchant_country}, Operations in ${m.operating_country}. Complexity increased to 3.0.`,
                     },
                     scores: Object.fromEntries(
                       Object.entries(assessment.scores).map(([k, v]) => [k, v.score]),
