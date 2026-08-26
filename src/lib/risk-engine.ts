@@ -479,7 +479,6 @@ function scoreFraudSignals(m: Merchant): ComponentScore {
 
   return { score: round2(clamp(score, 1, 5)), lines };
 }
-}
 
 /* ------------------------------------------------------------------ */
 /* 4.6 Historical performance                                          */
