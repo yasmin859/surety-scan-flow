@@ -392,7 +392,7 @@ function MerchantDetail() {
                 <Row label="Operating country" value={m.operating_country} />
                 <Row
                   label="Geographic consistency"
-                  value={m.merchant_country === m.operating_country ? "Aligned" : "Mismatch (+0.5)"}
+                  value={m.merchant_country === m.operating_country ? "Aligned (1.0)" : "Mismatch (3.0)"}
                 />
                 <Row label="Email" value={m.merchant_email || "—"} />
                 <Row label="Website" value={m.merchant_website || "—"} />
