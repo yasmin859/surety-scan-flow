@@ -397,8 +397,8 @@ function NewAssessment() {
                   </Field>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Score is the higher of the IP band and the email domain sub-score. Custom domains that
-                  don't match the merchant website add +1; an IP score above 80 adds +0.5 (max 5).
+                  Score is the higher of the IP band and the email domain sub-score. An IP score above 80
+                  adds +0.5 (max 5).
                 </p>
               </SubBox>
 
