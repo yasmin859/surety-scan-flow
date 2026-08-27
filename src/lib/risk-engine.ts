@@ -299,10 +299,10 @@ export const STRIPE_RESTRICTED_URL = "https://stripe.com/ie/legal/restricted-bus
 export const WEIGHTS = {
   merchant_country: 0.18,
   industry_product: 0.25,
-  business_model: 0.05,
+  business_model: 0.1,
   fraud_signals: 0.12,
   historical: 0.2,
-  business_maturity: 0.2,
+  business_maturity: 0.15,
 } as const;
 
 
@@ -375,11 +375,11 @@ function scoreGeographicConsistency(m: Merchant): ComponentScore {
     };
   }
   return {
-    score: 3,
+    score: 2,
     lines: [
       {
-        label: `Jurisdictional mismatch detected: UBO in ${m.merchant_country}, Operations in ${m.operating_country}. Complexity increased to 3.0`,
-        value: 3,
+        label: `UBO and Operations are in different jurisdictions. Complexity score set to 2.0 (Low Risk).`,
+        value: 2,
       },
     ],
   };
