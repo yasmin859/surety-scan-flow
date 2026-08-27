@@ -113,8 +113,8 @@ export const EMPTY_ACCOUNT_HEALTH: AccountHealth = {
 export interface ActualMetrics {
   chargebacks: number;
   refunds: number;
-  geo_behavior: "As expected" | "Minor drift" | "Significant drift";
 }
+
 
 export interface ScoreLine {
   label: string;
@@ -575,8 +575,7 @@ const CATEGORY_RANK: Record<Category, number> = { REJECTED: 0, LOW: 1, MEDIUM: 2
 
 /**
  * Observed Historical Performance sub-score (1-5) derived purely from realised
- * losses — chargebacks and refunds. Geographic drift is deliberately
- * excluded: dispersion is not a loss.
+ * losses — chargebacks and refunds.
  */
 export function observedPerformanceScore(a: ActualMetrics): number {
   let score = 1;
@@ -603,15 +602,12 @@ export interface Stage2Evaluation {
   recalculated_total: number;
   /** True when an upward recalculation was suppressed by the performance-first rule. */
   capped: boolean;
-  geo_drift: ActualMetrics["geo_behavior"];
   note: string;
 }
 
 /**
  * Performance-first override: the total risk score may only rise when the
  * observed Historical Performance score rises above the Stage 1 score.
- * Geographic drift alone never pushes the total upward while performance is
- * healthy (performance score ≤ 3.0) — Stage 1 remains the ceiling.
  */
 export function evaluateStage2(assessment: Assessment, a: ActualMetrics): Stage2Evaluation {
   const performance = observedPerformanceScore(a);
