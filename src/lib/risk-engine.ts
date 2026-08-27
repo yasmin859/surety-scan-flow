@@ -627,29 +627,21 @@ export function evaluateStage2(assessment: Assessment, a: ActualMetrics): Stage2
   if (performanceWorsened) {
     recalculated = round2(clamp(rescored, 1, 5));
     note = `Realised losses worsened (performance ${stage1Historical.toFixed(2)} → ${performance.toFixed(2)}) — score recalculated upward.`;
-  } else if (healthy && a.geo_behavior !== "As expected") {
-    capped = true;
-    note = `Geographic drift observed (${a.geo_behavior}) but performance is healthy (${performance.toFixed(2)} ≤ 3.0) — Stage 1 score held as the ceiling.`;
   } else if (performance < stage1Historical) {
     recalculated = round2(clamp(rescored, 1, 5));
     note = `Performance better than predicted (${stage1Historical.toFixed(2)} → ${performance.toFixed(2)}) — score revised downward.`;
   }
 
   const outcome = observedCategory(a);
-  const cappedOutcome: Category =
-    capped && CATEGORY_RANK[outcome] > CATEGORY_RANK[assessment.category]
-      ? assessment.category
-      : outcome;
 
   return {
     performance_score: performance,
     performance_healthy: healthy,
-    actual_outcome: cappedOutcome,
-    variance: compareStage2(assessment.category, cappedOutcome),
+    actual_outcome: outcome,
+    variance: compareStage2(assessment.category, outcome),
     stage1_total: stage1Total,
     recalculated_total: recalculated,
     capped,
-    geo_drift: a.geo_behavior,
     note,
   };
 }
