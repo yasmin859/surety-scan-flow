@@ -65,9 +65,6 @@ export interface Merchant {
   avg_order_value: number;
   business_model: BusinessModel;
   processing_history: ProcessingHistory;
-  chargeback_rate: number;
-  fraud_rate: number;
-  refund_rate: number;
   business_maturity: BusinessMaturity;
   tickets: MerchantTicket[];
   internal_notes: string;
@@ -114,7 +111,6 @@ export const EMPTY_ACCOUNT_HEALTH: AccountHealth = {
 
 
 export interface ActualMetrics {
-  fraud_rate: number;
   chargebacks: number;
   refunds: number;
   geo_behavior: "As expected" | "Minor drift" | "Significant drift";
@@ -309,7 +305,6 @@ export const WEIGHTS = {
 /** Thresholds used for "high" flags in historical, AOV and fraud-signal scoring. */
 export const THRESHOLDS = {
   chargeback_high: 0.9, // %
-  fraud_high: 0.5, // %
   refund_high: 8, // %
   aov_high: 250, // currency units
   fraud_signal_high: 80, // email/IP fraud score
@@ -494,33 +489,10 @@ const HISTORY_SCORE: Record<ProcessingHistory, number> = {
 
 function scoreHistorical(m: Merchant): ComponentScore {
   const base = HISTORY_SCORE[m.processing_history];
-  const lines: ScoreLine[] = [{ label: `Processing history baseline (${m.processing_history})`, value: base }];
-  let score = base;
-
-  if (m.chargeback_rate > THRESHOLDS.chargeback_high) {
-    score += 1;
-    lines.push({ label: `High chargeback rate (${m.chargeback_rate}%)`, value: 1 });
-  }
-  if (m.fraud_rate > THRESHOLDS.fraud_high) {
-    score += 1;
-    lines.push({ label: `High fraud rate (${m.fraud_rate}%)`, value: 1 });
-  }
-  if (m.refund_rate > THRESHOLDS.refund_high) {
-    score += 0.5;
-    lines.push({ label: `High refund rate (${m.refund_rate}%)`, value: 0.5 });
-  }
-
-  const clean =
-    m.processing_history === "3+ years" &&
-    m.chargeback_rate <= THRESHOLDS.chargeback_high &&
-    m.fraud_rate <= THRESHOLDS.fraud_high &&
-    m.refund_rate <= THRESHOLDS.refund_high;
-  if (clean) {
-    score -= 0.5;
-    lines.push({ label: "Strong history (3+ years clean)", value: -0.5 });
-  }
-
-  return { score: round2(clamp(score, 1, 5)), lines };
+  const lines: ScoreLine[] = [
+    { label: `Processing history baseline (${m.processing_history})`, value: base },
+  ];
+  return { score: round2(clamp(base, 1, 5)), lines };
 }
 
 /* ------------------------------------------------------------------ */
@@ -603,19 +575,13 @@ const CATEGORY_RANK: Record<Category, number> = { REJECTED: 0, LOW: 1, MEDIUM: 2
 
 /**
  * Observed Historical Performance sub-score (1-5) derived purely from realised
- * losses — fraud, chargebacks and refunds. Geographic drift is deliberately
+ * losses — chargebacks and refunds. Geographic drift is deliberately
  * excluded: dispersion is not a loss.
  */
 export function observedPerformanceScore(a: ActualMetrics): number {
   let score = 1;
-  if (a.fraud_rate > 1) score += 2;
-  else if (a.fraud_rate > THRESHOLDS.fraud_high) score += 1;
-
-  if (a.chargebacks > 1.5) score += 2;
-  else if (a.chargebacks > THRESHOLDS.chargeback_high) score += 1;
-
-  if (a.refunds > 15) score += 1;
-  else if (a.refunds > THRESHOLDS.refund_high) score += 0.5;
+  if (a.chargebacks > THRESHOLDS.chargeback_high) score += 1;
+  if (a.refunds > THRESHOLDS.refund_high) score += 0.5;
 
   return round2(clamp(score, 1, 5));
 }

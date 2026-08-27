@@ -144,9 +144,6 @@ const emptyMerchant: Merchant = {
   avg_order_value: 60,
   business_model: "Ecommerce",
   processing_history: "No history",
-  chargeback_rate: 0,
-  fraud_rate: 0,
-  refund_rate: 0,
   business_maturity: "1-3 years",
   tickets: [],
   internal_notes: "",
@@ -454,36 +451,6 @@ function NewAssessment() {
                   value={m.business_maturity}
                   onChange={(v) => set("business_maturity", v)}
                   options={["MVP", "<1 year", "1-3 years", "3+ years"]}
-                />
-              </Field>
-              <Field label="Chargeback rate (%)">
-                <Input
-                  type="number"
-                  step="0.01"
-                  min={0}
-                  value={m.chargeback_rate}
-                  onChange={(e) => set("chargeback_rate", Math.max(0, Number(e.target.value) || 0))}
-                  disabled={m.processing_history === "No history"}
-                />
-              </Field>
-              <Field label="Fraud rate (%)">
-                <Input
-                  type="number"
-                  step="0.01"
-                  min={0}
-                  value={m.fraud_rate}
-                  onChange={(e) => set("fraud_rate", Math.max(0, Number(e.target.value) || 0))}
-                  disabled={m.processing_history === "No history"}
-                />
-              </Field>
-              <Field label="Refund rate (%)">
-                <Input
-                  type="number"
-                  step="0.01"
-                  min={0}
-                  value={m.refund_rate}
-                  onChange={(e) => set("refund_rate", Math.max(0, Number(e.target.value) || 0))}
-                  disabled={m.processing_history === "No history"}
                 />
               </Field>
             </div>
