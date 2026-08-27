@@ -429,7 +429,6 @@ function MerchantDetail() {
                           stage1_total: assessment.total_score,
                           recalculated_total: r.stage2.recalculated_total ?? assessment.total_score,
                           performance_first_cap_applied: r.stage2.capped ?? false,
-                          geo_behavior: r.stage2.actual_metrics.geo_behavior,
                           note: r.stage2.note ?? null,
                         }
                       : null,
