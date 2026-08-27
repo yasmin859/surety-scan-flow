@@ -299,10 +299,10 @@ export const STRIPE_RESTRICTED_URL = "https://stripe.com/ie/legal/restricted-bus
 export const WEIGHTS = {
   merchant_country: 0.18,
   industry_product: 0.25,
-  business_model: 0.05,
+  business_model: 0.1,
   fraud_signals: 0.12,
   historical: 0.2,
-  business_maturity: 0.2,
+  business_maturity: 0.15,
 } as const;
 
 
