@@ -64,7 +64,6 @@ function MerchantDetail() {
   const [metrics, setMetrics] = useState<ActualMetrics>({
     chargebacks: 0,
     refunds: 0,
-    geo_behavior: "As expected",
   });
   const [health, setHealth] = useState<AccountHealth>(EMPTY_ACCOUNT_HEALTH);
 
@@ -232,8 +231,7 @@ function MerchantDetail() {
               <h2 className="text-lg font-semibold">Stage 2 — monitoring validation</h2>
               <p className="mb-4 text-sm text-muted-foreground">
                 Performance-first: the total score can only rise if realised losses — chargebacks and
-                refunds — worsen. Geographic drift alone never pushes the score above the Stage 1
-                ceiling while performance stays healthy.
+                refunds — worsen.
               </p>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -260,26 +258,6 @@ function MerchantDetail() {
                       setMetrics((p) => ({ ...p, refunds: Math.max(0, Number(e.target.value) || 0) }))
                     }
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label className="label-caps">Geo behaviour</Label>
-                  <Select
-                    value={metrics.geo_behavior}
-                    onValueChange={(v) =>
-                      setMetrics((p) => ({ ...p, geo_behavior: v as ActualMetrics["geo_behavior"] }))
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {["As expected", "Minor drift", "Significant drift"].map((o) => (
-                        <SelectItem key={o} value={o}>
-                          {o}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 
@@ -451,7 +429,6 @@ function MerchantDetail() {
                           stage1_total: assessment.total_score,
                           recalculated_total: r.stage2.recalculated_total ?? assessment.total_score,
                           performance_first_cap_applied: r.stage2.capped ?? false,
-                          geo_behavior: r.stage2.actual_metrics.geo_behavior,
                           note: r.stage2.note ?? null,
                         }
                       : null,

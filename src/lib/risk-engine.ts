@@ -113,8 +113,8 @@ export const EMPTY_ACCOUNT_HEALTH: AccountHealth = {
 export interface ActualMetrics {
   chargebacks: number;
   refunds: number;
-  geo_behavior: "As expected" | "Minor drift" | "Significant drift";
 }
+
 
 export interface ScoreLine {
   label: string;
@@ -575,8 +575,7 @@ const CATEGORY_RANK: Record<Category, number> = { REJECTED: 0, LOW: 1, MEDIUM: 2
 
 /**
  * Observed Historical Performance sub-score (1-5) derived purely from realised
- * losses — chargebacks and refunds. Geographic drift is deliberately
- * excluded: dispersion is not a loss.
+ * losses — chargebacks and refunds.
  */
 export function observedPerformanceScore(a: ActualMetrics): number {
   let score = 1;
@@ -603,15 +602,12 @@ export interface Stage2Evaluation {
   recalculated_total: number;
   /** True when an upward recalculation was suppressed by the performance-first rule. */
   capped: boolean;
-  geo_drift: ActualMetrics["geo_behavior"];
   note: string;
 }
 
 /**
  * Performance-first override: the total risk score may only rise when the
  * observed Historical Performance score rises above the Stage 1 score.
- * Geographic drift alone never pushes the total upward while performance is
- * healthy (performance score ≤ 3.0) — Stage 1 remains the ceiling.
  */
 export function evaluateStage2(assessment: Assessment, a: ActualMetrics): Stage2Evaluation {
   const performance = observedPerformanceScore(a);
@@ -631,29 +627,21 @@ export function evaluateStage2(assessment: Assessment, a: ActualMetrics): Stage2
   if (performanceWorsened) {
     recalculated = round2(clamp(rescored, 1, 5));
     note = `Realised losses worsened (performance ${stage1Historical.toFixed(2)} → ${performance.toFixed(2)}) — score recalculated upward.`;
-  } else if (healthy && a.geo_behavior !== "As expected") {
-    capped = true;
-    note = `Geographic drift observed (${a.geo_behavior}) but performance is healthy (${performance.toFixed(2)} ≤ 3.0) — Stage 1 score held as the ceiling.`;
   } else if (performance < stage1Historical) {
     recalculated = round2(clamp(rescored, 1, 5));
     note = `Performance better than predicted (${stage1Historical.toFixed(2)} → ${performance.toFixed(2)}) — score revised downward.`;
   }
 
   const outcome = observedCategory(a);
-  const cappedOutcome: Category =
-    capped && CATEGORY_RANK[outcome] > CATEGORY_RANK[assessment.category]
-      ? assessment.category
-      : outcome;
 
   return {
     performance_score: performance,
     performance_healthy: healthy,
-    actual_outcome: cappedOutcome,
-    variance: compareStage2(assessment.category, cappedOutcome),
+    actual_outcome: outcome,
+    variance: compareStage2(assessment.category, outcome),
     stage1_total: stage1Total,
     recalculated_total: recalculated,
     capped,
-    geo_drift: a.geo_behavior,
     note,
   };
 }
