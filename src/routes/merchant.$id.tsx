@@ -392,7 +392,7 @@ function MerchantDetail() {
                 <Row label="Operating country" value={m.operating_country} />
                 <Row
                   label="Geographic consistency"
-                  value={m.merchant_country === m.operating_country ? "Aligned (1.0)" : "Mismatch (3.0)"}
+                  value={m.merchant_country === m.operating_country ? "Aligned (1.0)" : "Mismatch (2.0)"}
                 />
                 <Row label="Email" value={m.merchant_email || "—"} />
                 <Row label="Website" value={m.merchant_website || "—"} />
@@ -451,7 +451,7 @@ function MerchantDetail() {
                       rationale:
                         m.merchant_country === m.operating_country
                           ? "UBO and Operations are in the same jurisdiction (Consistent)."
-                          : `Jurisdictional mismatch detected: UBO in ${m.merchant_country}, Operations in ${m.operating_country}. Complexity increased to 3.0.`,
+                          : `UBO and Operations are in different jurisdictions. Complexity score set to 2.0 (Low Risk).`,
                     },
                     scores: Object.fromEntries(
                       Object.entries(assessment.scores).map(([k, v]) => [k, v.score]),

@@ -375,11 +375,11 @@ function scoreGeographicConsistency(m: Merchant): ComponentScore {
     };
   }
   return {
-    score: 3,
+    score: 2,
     lines: [
       {
-        label: `Jurisdictional mismatch detected: UBO in ${m.merchant_country}, Operations in ${m.operating_country}. Complexity increased to 3.0`,
-        value: 3,
+        label: `UBO and Operations are in different jurisdictions. Complexity score set to 2.0 (Low Risk).`,
+        value: 2,
       },
     ],
   };
