@@ -62,7 +62,6 @@ function MerchantDetail() {
   const navigate = useNavigate();
   const [record, setRecord] = useState<MerchantRecord | null | undefined>(undefined);
   const [metrics, setMetrics] = useState<ActualMetrics>({
-    fraud_rate: 0,
     chargebacks: 0,
     refunds: 0,
     geo_behavior: "As expected",
@@ -232,24 +231,12 @@ function MerchantDetail() {
             <section className="panel p-6">
               <h2 className="text-lg font-semibold">Stage 2 — monitoring validation</h2>
               <p className="mb-4 text-sm text-muted-foreground">
-                Performance-first: the total score can only rise if realised losses — fraud and
-                chargebacks — worsen. Geographic drift alone never pushes the score above the Stage 1
+                Performance-first: the total score can only rise if realised losses — chargebacks and
+                refunds — worsen. Geographic drift alone never pushes the score above the Stage 1
                 ceiling while performance stays healthy.
               </p>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label className="label-caps">Fraud rate (%)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    value={metrics.fraud_rate}
-                    onChange={(e) =>
-                      setMetrics((p) => ({ ...p, fraud_rate: Math.max(0, Number(e.target.value) || 0) }))
-                    }
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label className="label-caps">Chargebacks (%)</Label>
                   <Input
@@ -341,8 +328,7 @@ function MerchantDetail() {
                     <p className="label-caps">Risk drivers — actual performance</p>
                     <ul className="mt-2 space-y-1 text-sm">
                       <li>
-                        Fraud losses: {r.stage2.actual_metrics.fraud_rate}% · Chargeback losses:{" "}
-                        {r.stage2.actual_metrics.chargebacks}% · Refunds:{" "}
+                        Chargeback losses: {r.stage2.actual_metrics.chargebacks}% · Refunds:{" "}
                         {r.stage2.actual_metrics.refunds}%
                       </li>
                       <li className="opacity-90">{r.stage2.note}</li>
@@ -413,9 +399,6 @@ function MerchantDetail() {
                 <Row label="Business model" value={m.business_model} />
                 <Row label="Processing history" value={m.processing_history} />
                 <Row label="Maturity" value={m.business_maturity} />
-                <Row label="Chargeback rate" value={`${m.chargeback_rate}%`} />
-                <Row label="Fraud rate" value={`${m.fraud_rate}%`} />
-                <Row label="Refund rate" value={`${m.refund_rate}%`} />
               </div>
             </section>
 
