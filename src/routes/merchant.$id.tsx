@@ -92,6 +92,8 @@ function MerchantDetail() {
     fraud_score: 0,
   });
   const [health, setHealth] = useState<AccountHealth>(EMPTY_ACCOUNT_HEALTH);
+  const [actions, setActions] = useState<DecisionActions>({ actions: [] });
+
 
   useEffect(() => {
     let r = getRecord(id) ?? null;
