@@ -62,6 +62,18 @@ function Row({ label, value }: { label: string; value: string | number }) {
   );
 }
 
+const pct = (v?: number) => (v === undefined || v === null ? "—" : `${v}%`);
+
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { month: "short", year: "numeric" });
+
+function delta(prev?: number, curr?: number) {
+  if (prev === undefined || curr === undefined) return "—";
+  const d = Math.round((curr - prev) * 100) / 100;
+  if (d === 0) return "no change";
+  return `${d > 0 ? "↑ +" : "↓ "}${d}%`;
+}
+
 function MerchantDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
