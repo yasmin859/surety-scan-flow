@@ -147,7 +147,8 @@ function Dashboard() {
                     <span className="inline-flex items-center gap-2 rounded-full border border-risk-red/45 bg-risk-red/10 px-3 py-1 text-xs font-semibold text-risk-red">
                       <ShieldAlert className="size-3.5" /> REJECTED
                     </span>
-                  )}
+                    );
+                  })()}
 
                   <ArrowRight className="size-4 text-muted-foreground" />
                 </Link>
