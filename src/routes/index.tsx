@@ -63,7 +63,7 @@ function Dashboard() {
           <p className="label-caps flex items-center gap-2">
             <Activity className="size-3.5 text-primary" /> Risk assessment engine
           </p>
-          <h1 className="mt-2 text-4xl font-bold">Merchant onboarding portfolio</h1>
+          <h1 className="mt-2 text-4xl font-bold">Risk Assessment Dashboard</h1>
 
         </div>
         <div className="flex items-center gap-2">
