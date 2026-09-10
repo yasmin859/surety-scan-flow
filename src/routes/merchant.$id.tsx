@@ -647,7 +647,7 @@ function MerchantDetail() {
                       className={`mt-5 rounded-lg border p-5 ${
                         r.final_decision === "STANDARD TERMS"
                           ? "border-risk-low/40 bg-risk-low/10 text-risk-low"
-                          : r.final_decision === "ADJUST TERMS or EXTEND"
+                          : r.final_decision === "UNDER MONITORING"
                             ? "border-risk-orange/45 bg-risk-orange/10 text-risk-orange"
                             : "border-risk-red/45 bg-risk-red/10 text-risk-red"
                       }`}

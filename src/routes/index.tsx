@@ -47,9 +47,21 @@ function Dashboard() {
 
 
   const list = records ?? [];
+
+  /** Latest recorded assessment (Stage 2 monitoring when present, else Stage 1). */
+  const latestOf = (r: MerchantRecord) => {
+    if (!r.assessment) return null;
+    const last = r.history?.[r.history.length - 1];
+    return {
+      category: last?.category ?? r.assessment.category,
+      total_score: last?.total_score ?? r.assessment.total_score,
+      label: last?.label ?? "Initial Assessment",
+    };
+  };
+
   const counts = list.reduce<Record<Category, number>>(
     (acc, r) => {
-      const cat: Category = r.assessment ? r.assessment.category : "REJECTED";
+      const cat: Category = latestOf(r)?.category ?? "REJECTED";
       acc[cat] += 1;
       return acc;
     },
