@@ -120,7 +120,27 @@ function MerchantDetail() {
     setRecord(r);
     if (r?.stage2) setMetrics({ fraud_score: 0, ...r.stage2.actual_metrics });
     setHealth(r?.account_health ?? EMPTY_ACCOUNT_HEALTH);
+    const latest = r?.history?.[r.history.length - 1];
+    setActions(
+      r?.decision_actions ?? {
+        actions: (latest?.actions ?? []).filter((a) =>
+          (ACTION_OPTIONS as readonly string[]).includes(a),
+        ),
+      },
+    );
   }, [id]);
+
+  const toggleAction = (option: string) =>
+    setActions((p) => {
+      const on = p.actions.includes(option);
+      const next = on ? p.actions.filter((a) => a !== option) : [...p.actions, option];
+      return {
+        actions: next,
+        reserve_amount: next.includes("Add Reserve") ? p.reserve_amount : undefined,
+        pause_until: next.includes("Pause Payout") ? p.pause_until : undefined,
+      };
+    });
+
 
   const saveHealth = (next: AccountHealth) => {
     setHealth(next);
