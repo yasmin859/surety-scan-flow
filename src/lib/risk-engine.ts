@@ -202,9 +202,9 @@ export type RiskAction = (typeof ACTION_OPTIONS)[number];
 export interface DecisionActions {
   actions: string[];
   /** Amount held as reserve, when "Add Reserve" is selected. */
-  reserve_amount?: number;
+  reserve_amount?: number | undefined;
   /** ISO date (yyyy-mm-dd) the payout pause runs until, when "Pause Payout" is selected. */
-  pause_until?: string;
+  pause_until?: string | undefined;
 }
 
 /** Recommended risk controls for a category — Stage 3 playbook. */
