@@ -113,6 +113,8 @@ export const EMPTY_ACCOUNT_HEALTH: AccountHealth = {
 export interface ActualMetrics {
   chargebacks: number;
   refunds: number;
+  /** Monitoring-only fraud score (%). Recorded for trend context, not weighted. */
+  fraud_score?: number;
 }
 
 
