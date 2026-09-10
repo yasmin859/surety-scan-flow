@@ -280,7 +280,19 @@ function MerchantDetail() {
                 refunds — worsen.
               </p>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <Label className="label-caps">Fraud score (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={metrics.fraud_score ?? 0}
+                    onChange={(e) =>
+                      setMetrics((p) => ({ ...p, fraud_score: Math.max(0, Number(e.target.value) || 0) }))
+                    }
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label className="label-caps">Chargebacks (%)</Label>
                   <Input
@@ -307,8 +319,13 @@ function MerchantDetail() {
                 </div>
               </div>
 
-              <Button className="mt-5" onClick={saveStage2}>
-                {r.stage2 ? "Update monitoring outcome" : "Record monitoring outcome"}
+              <p className="mt-3 text-xs text-muted-foreground">
+                Monitoring data is typically refreshed every ~3 months. Each save creates a new
+                assessment record — previous assessments are kept.
+              </p>
+
+              <Button className="mt-4" onClick={saveStage2}>
+                Record {nextAssessmentLabel(history)}
               </Button>
 
               {r.stage2 && (
