@@ -142,6 +142,24 @@ function MerchantDetail() {
     });
 
 
+  const saveActions = () => {
+    if (actions.actions.includes("Add Reserve") && !actions.reserve_amount) {
+      toast.error("Enter the reserve amount");
+      return;
+    }
+    if (actions.actions.includes("Pause Payout") && !actions.pause_until) {
+      toast.error("Select the date payouts are paused until");
+      return;
+    }
+    setRecord((prev) => {
+      if (!prev) return prev;
+      const updated: MerchantRecord = { ...prev, decision_actions: { ...actions } };
+      upsertRecord(updated);
+      return updated;
+    });
+    toast.success("Actions saved");
+  };
+
   const saveHealth = (next: AccountHealth) => {
     setHealth(next);
     setRecord((prev) => {
