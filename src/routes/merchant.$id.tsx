@@ -18,11 +18,16 @@ import { ScoreBreakdown } from "@/components/score-breakdown";
 import { AccountHealthCard } from "@/components/account-health-card";
 import { deleteRecord, getRecord, upsertRecord } from "@/lib/records-store";
 import {
+  categorise,
   decide,
   evaluateStage2,
+  nextAssessmentLabel,
+  recommendedActions,
   EMPTY_ACCOUNT_HEALTH,
+  CATEGORY_LABEL,
   type AccountHealth,
   type ActualMetrics,
+  type AssessmentEntry,
   type MerchantRecord,
 } from "@/lib/risk-engine";
 
