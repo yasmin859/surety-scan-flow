@@ -124,14 +124,34 @@ function MerchantDetail() {
   const r = record;
   const { merchant: m, assessment } = r;
 
+  const history = r.history ?? [];
+  const current = history.length > 0 ? history[history.length - 1] : null;
+  const previous = history.length > 1 ? history[history.length - 2] : null;
+  const isFirstAssessment = history.length <= 1;
+
+  /** Appends a NEW assessment record — previous assessments are never overwritten. */
   const saveStage2 = () => {
     if (!assessment) return;
     const evaluation = evaluateStage2(assessment, metrics);
+    const category = categorise(evaluation.recalculated_total);
+    const entry: AssessmentEntry = {
+      id: crypto.randomUUID(),
+      label: nextAssessmentLabel(history),
+      date: new Date().toISOString(),
+      kind: "monitoring",
+      metrics: { ...metrics },
+      total_score: evaluation.recalculated_total,
+      category: assessment.category === "REJECTED" ? "REJECTED" : category,
+      actions: recommendedActions(
+        assessment.category === "REJECTED" ? "REJECTED" : category,
+      ),
+    };
     const updated: MerchantRecord = {
       ...r,
       stage: 2,
+      history: [...history, entry],
       stage2: {
-        actual_metrics: metrics,
+        actual_metrics: { ...metrics },
         actual_outcome: evaluation.actual_outcome,
         variance: evaluation.variance,
         performance_score: evaluation.performance_score,
@@ -143,7 +163,7 @@ function MerchantDetail() {
     };
     upsertRecord(updated);
     setRecord(updated);
-    toast.success("Monitoring outcome recorded");
+    toast.success(`${entry.label} recorded`);
   };
 
 
