@@ -1,7 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, ShieldAlert, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, ShieldAlert, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,9 +31,11 @@ import {
   recommendedActions,
   EMPTY_ACCOUNT_HEALTH,
   CATEGORY_LABEL,
+  ACTION_OPTIONS,
   type AccountHealth,
   type ActualMetrics,
   type AssessmentEntry,
+  type DecisionActions,
   type MerchantRecord,
 } from "@/lib/risk-engine";
 
@@ -84,6 +92,8 @@ function MerchantDetail() {
     fraud_score: 0,
   });
   const [health, setHealth] = useState<AccountHealth>(EMPTY_ACCOUNT_HEALTH);
+  const [actions, setActions] = useState<DecisionActions>({ actions: [] });
+
 
   useEffect(() => {
     let r = getRecord(id) ?? null;
@@ -110,7 +120,45 @@ function MerchantDetail() {
     setRecord(r);
     if (r?.stage2) setMetrics({ fraud_score: 0, ...r.stage2.actual_metrics });
     setHealth(r?.account_health ?? EMPTY_ACCOUNT_HEALTH);
+    const latest = r?.history?.[r.history.length - 1];
+    setActions(
+      r?.decision_actions ?? {
+        actions: (latest?.actions ?? []).filter((a) =>
+          (ACTION_OPTIONS as readonly string[]).includes(a),
+        ),
+      },
+    );
   }, [id]);
+
+  const toggleAction = (option: string) =>
+    setActions((p) => {
+      const on = p.actions.includes(option);
+      const next = on ? p.actions.filter((a) => a !== option) : [...p.actions, option];
+      return {
+        actions: next,
+        reserve_amount: next.includes("Add Reserve") ? p.reserve_amount : undefined,
+        pause_until: next.includes("Pause Payout") ? p.pause_until : undefined,
+      };
+    });
+
+
+  const saveActions = () => {
+    if (actions.actions.includes("Add Reserve") && !actions.reserve_amount) {
+      toast.error("Enter the reserve amount");
+      return;
+    }
+    if (actions.actions.includes("Pause Payout") && !actions.pause_until) {
+      toast.error("Select the date payouts are paused until");
+      return;
+    }
+    setRecord((prev) => {
+      if (!prev) return prev;
+      const updated: MerchantRecord = { ...prev, decision_actions: { ...actions } };
+      upsertRecord(updated);
+      return updated;
+    });
+    toast.success("Actions saved");
+  };
 
   const saveHealth = (next: AccountHealth) => {
     setHealth(next);
@@ -498,12 +546,89 @@ function MerchantDetail() {
 
               {current && (
                 <div className="mt-5 rounded-lg border border-border bg-surface-strong/60 p-4">
-                  <p className="label-caps">Recommended actions · {CATEGORY_LABEL[current.category]} risk</p>
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-                    {current.actions.map((a) => (
-                      <li key={a}>{a}</li>
-                    ))}
-                  </ul>
+                  <p className="label-caps">
+                    Recommended actions · {CATEGORY_LABEL[current.category]} risk
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Suggested: {current.actions.join(" + ")}
+                  </p>
+
+                  <div className="mt-4 space-y-4">
+                    <div className="space-y-2">
+                      <Label className="label-caps">Actions to be taken</Label>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" className="w-full justify-between sm:w-80">
+                            <span className="truncate">
+                              {actions.actions.length > 0
+                                ? actions.actions.join(", ")
+                                : "Select actions"}
+                            </span>
+                            <ChevronDown className="size-4 opacity-60" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-72 bg-popover">
+                          {ACTION_OPTIONS.map((option) => (
+                            <DropdownMenuCheckboxItem
+                              key={option}
+                              checked={actions.actions.includes(option)}
+                              onSelect={(e) => e.preventDefault()}
+                              onCheckedChange={() => toggleAction(option)}
+                            >
+                              {option}
+                            </DropdownMenuCheckboxItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    {actions.actions.includes("Add Reserve") && (
+                      <div className="space-y-2 sm:w-80">
+                        <Label className="label-caps">Reserve amount</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          placeholder="0.00"
+                          value={actions.reserve_amount ?? ""}
+                          onChange={(e) =>
+                            setActions((p) => ({
+                              ...p,
+                              reserve_amount:
+                                e.target.value === "" ? undefined : Math.max(0, Number(e.target.value) || 0),
+                            }))
+                          }
+                        />
+                      </div>
+                    )}
+
+                    {actions.actions.includes("Pause Payout") && (
+                      <div className="space-y-2 sm:w-80">
+                        <Label className="label-caps">Payout paused until</Label>
+                        <Input
+                          type="date"
+                          value={actions.pause_until ?? ""}
+                          onChange={(e) =>
+                            setActions((p) => ({ ...p, pause_until: e.target.value || undefined }))
+                          }
+                        />
+                      </div>
+                    )}
+
+                    <Button variant="secondary" onClick={saveActions}>
+                      Save actions
+                    </Button>
+
+                    {r.decision_actions && r.decision_actions.actions.length > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        Applied: {r.decision_actions.actions.join(" + ")}
+                        {r.decision_actions.reserve_amount !== undefined &&
+                          ` · reserve ${r.decision_actions.reserve_amount}`}
+                        {r.decision_actions.pause_until &&
+                          ` · payouts paused until ${r.decision_actions.pause_until}`}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
 
