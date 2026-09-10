@@ -47,9 +47,21 @@ function Dashboard() {
 
 
   const list = records ?? [];
+
+  /** Latest recorded assessment (Stage 2 monitoring when present, else Stage 1). */
+  const latestOf = (r: MerchantRecord) => {
+    if (!r.assessment) return null;
+    const last = r.history?.[r.history.length - 1];
+    return {
+      category: last?.category ?? r.assessment.category,
+      total_score: last?.total_score ?? r.assessment.total_score,
+      label: last?.label ?? "Initial Assessment",
+    };
+  };
+
   const counts = list.reduce<Record<Category, number>>(
     (acc, r) => {
-      const cat: Category = r.assessment ? r.assessment.category : "REJECTED";
+      const cat: Category = latestOf(r)?.category ?? "REJECTED";
       acc[cat] += 1;
       return acc;
     },
@@ -63,7 +75,7 @@ function Dashboard() {
           <p className="label-caps flex items-center gap-2">
             <Activity className="size-3.5 text-primary" /> Risk assessment engine
           </p>
-          <h1 className="mt-2 text-4xl font-bold">Merchant onboarding portfolio</h1>
+          <h1 className="mt-2 text-4xl font-bold">Risk Assessment Dashboard</h1>
 
         </div>
         <div className="flex items-center gap-2">
@@ -119,21 +131,24 @@ function Dashboard() {
 
                   <StageChip stage={r.stage} />
 
-                  {r.assessment ? (
+                  {(() => {
+                    const latest = latestOf(r);
+                    return latest ? (
                     <>
                       <span className="font-mono text-lg font-semibold">
-                        {r.assessment.total_score.toFixed(2)}
+                        {latest.total_score.toFixed(2)}
                       </span>
-                      <RiskBadge category={r.assessment.category} />
+                      <RiskBadge category={latest.category} />
                       <span className="hidden font-mono text-xs text-muted-foreground sm:inline">
-                        {r.assessment.monitoring_days}
+                        {latest.label}
                       </span>
                     </>
                   ) : (
                     <span className="inline-flex items-center gap-2 rounded-full border border-risk-red/45 bg-risk-red/10 px-3 py-1 text-xs font-semibold text-risk-red">
                       <ShieldAlert className="size-3.5" /> REJECTED
                     </span>
-                  )}
+                    );
+                  })()}
 
                   <ArrowRight className="size-4 text-muted-foreground" />
                 </Link>

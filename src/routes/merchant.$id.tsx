@@ -234,10 +234,11 @@ function MerchantDetail() {
 
   const finalise = () => {
     if (!assessment || !r.stage2) return;
+    const latestCategory = current?.category ?? assessment.category;
     const updated: MerchantRecord = {
       ...r,
       stage: 3,
-      final_decision: decide(assessment.category, r.stage2.variance),
+      final_decision: decide(latestCategory, r.stage2.variance),
     };
     upsertRecord(updated);
     setRecord(updated);
@@ -646,7 +647,7 @@ function MerchantDetail() {
                       className={`mt-5 rounded-lg border p-5 ${
                         r.final_decision === "STANDARD TERMS"
                           ? "border-risk-low/40 bg-risk-low/10 text-risk-low"
-                          : r.final_decision === "ADJUST TERMS or EXTEND"
+                          : r.final_decision === "UNDER MONITORING"
                             ? "border-risk-orange/45 bg-risk-orange/10 text-risk-orange"
                             : "border-risk-red/45 bg-risk-red/10 text-risk-red"
                       }`}
@@ -676,13 +677,10 @@ function MerchantDetail() {
                 <Row label="Email domain type" value={m.email_domain_type ?? "—"} />
                 <Row label="IP fraud score" value={m.ip_fraud_score} />
 
-                <Row
-                  label="Stripe connected account"
-                  value={m.stripe_account_exists === false ? "No" : "Yes"}
-                />
-                {m.stripe_account_exists && m.stripe_account_link && (
-                  <Row label="Connected account link" value={m.stripe_account_link} />
+                {health.connected_account_link && (
+                  <Row label="Connected account link" value={health.connected_account_link} />
                 )}
+
                 <Row label="Industry" value={m.industry} />
                 <Row label="Product type" value={m.product_type} />
                 <Row label="Delivery" value={m.delivery_type} />

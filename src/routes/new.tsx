@@ -317,34 +317,8 @@ function NewAssessment() {
                       />
                     </div>
                   ))}
-                  <div className="flex items-center justify-between rounded-lg border border-border bg-background/40 px-4 py-3">
-                    <span className="text-sm">Stripe connected account</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {m.stripe_account_exists ? "Yes" : "No"}
-                      </span>
-                      <Switch
-                        checked={m.stripe_account_exists}
-                        onCheckedChange={(v) => {
-                          set("stripe_account_exists", v);
-                          if (!v) set("stripe_account_link", "");
-                        }}
-                      />
-                    </div>
-                  </div>
                 </div>
 
-                {m.stripe_account_exists && (
-                  <div className="mt-4">
-                    <Field label="Connected account link">
-                      <Input
-                        value={m.stripe_account_link}
-                        onChange={(e) => set("stripe_account_link", e.target.value.slice(0, 255))}
-                        placeholder="https://dashboard.stripe.com/connect/accounts/acct_..."
-                      />
-                    </Field>
-                  </div>
-                )}
 
                 <div
                   className={`mt-4 flex items-start gap-3 rounded-lg border px-4 py-3 text-sm ${

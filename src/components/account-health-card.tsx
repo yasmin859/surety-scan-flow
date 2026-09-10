@@ -107,6 +107,15 @@ export function AccountHealthCard({ value, onChange }: Props) {
           />
         </div>
 
+        <div className="space-y-2 sm:col-span-2">
+          <Label className="label-caps">Stripe connected account link</Label>
+          <Input
+            placeholder="https://dashboard.stripe.com/connect/accounts/acct_..."
+            value={value.connected_account_link ?? ""}
+            onChange={(e) => set("connected_account_link", e.target.value.slice(0, 255))}
+          />
+        </div>
+
         <div className="space-y-2">
           <Label className="label-caps">Follow-up ticket ID / link</Label>
           <Input
