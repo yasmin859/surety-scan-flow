@@ -186,26 +186,34 @@ export interface AssessmentEntry {
   actions: string[];
 }
 
+/** The only risk controls an agent can apply at Stage 3. */
+export const ACTION_OPTIONS = [
+  "Standard Terms",
+  "Increase monitoring",
+  "Add Reserve",
+  "Pause Payout",
+] as const;
+
+export type RiskAction = (typeof ACTION_OPTIONS)[number];
+
+/** Actions selected by the agent, with their parameters. */
+export interface DecisionActions {
+  actions: string[];
+  /** Amount held as reserve, when "Add Reserve" is selected. */
+  reserve_amount?: number;
+  /** ISO date (yyyy-mm-dd) the payout pause runs until, when "Pause Payout" is selected. */
+  pause_until?: string;
+}
+
 /** Recommended risk controls for a category — Stage 3 playbook. */
 export function recommendedActions(category: Category): string[] {
   switch (category) {
     case "LOW":
-      return ["Standard Terms", "Routine monitoring"];
+      return ["Standard Terms"];
     case "MEDIUM":
-      return [
-        "Add Reserve",
-        "Increase monitoring",
-        "Adjust settlement terms",
-        "Other applicable risk controls",
-      ];
+      return ["Add Reserve", "Increase monitoring"];
     case "HIGH":
-      return [
-        "Add Reserve",
-        "Pause Payouts",
-        "Increase monitoring",
-        "Adjust settlement terms",
-        "Other applicable risk controls",
-      ];
+      return ["Add Reserve", "Pause Payout", "Increase monitoring"];
     default:
       return ["Not onboarded — rejected at assessment"];
   }
