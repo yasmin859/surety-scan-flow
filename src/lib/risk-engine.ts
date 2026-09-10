@@ -113,6 +113,8 @@ export const EMPTY_ACCOUNT_HEALTH: AccountHealth = {
 export interface ActualMetrics {
   chargebacks: number;
   refunds: number;
+  /** Monitoring-only fraud score (%). Recorded for trend context, not weighted. */
+  fraud_score?: number;
 }
 
 
@@ -164,7 +166,53 @@ export interface MerchantRecord {
   final_decision: string | null;
   /** Operational only — excluded from scoring. */
   account_health?: AccountHealth;
+  /** Chronological assessment history — newest entry last. Never overwritten. */
+  history?: AssessmentEntry[];
+}
 
+/**
+ * One point-in-time assessment for a merchant. The first entry is always the
+ * Stage 1 initial assessment; every monitoring update appends a new entry.
+ */
+export interface AssessmentEntry {
+  id: string;
+  /** "Initial Assessment", "Assessment 2", … */
+  label: string;
+  date: string;
+  kind: "initial" | "monitoring";
+  metrics: ActualMetrics | null;
+  total_score: number;
+  category: Category;
+  actions: string[];
+}
+
+/** Recommended risk controls for a category — Stage 3 playbook. */
+export function recommendedActions(category: Category): string[] {
+  switch (category) {
+    case "LOW":
+      return ["Standard Terms", "Routine monitoring"];
+    case "MEDIUM":
+      return [
+        "Add Reserve",
+        "Increase monitoring",
+        "Adjust settlement terms",
+        "Other applicable risk controls",
+      ];
+    case "HIGH":
+      return [
+        "Add Reserve",
+        "Pause Payouts",
+        "Increase monitoring",
+        "Adjust settlement terms",
+        "Other applicable risk controls",
+      ];
+    default:
+      return ["Not onboarded — rejected at assessment"];
+  }
+}
+
+export function nextAssessmentLabel(history: AssessmentEntry[]): string {
+  return history.length === 0 ? "Initial Assessment" : `Assessment ${history.length + 1}`;
 }
 
 /* ------------------------------------------------------------------ */
