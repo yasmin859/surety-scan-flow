@@ -498,12 +498,89 @@ function MerchantDetail() {
 
               {current && (
                 <div className="mt-5 rounded-lg border border-border bg-surface-strong/60 p-4">
-                  <p className="label-caps">Recommended actions · {CATEGORY_LABEL[current.category]} risk</p>
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-                    {current.actions.map((a) => (
-                      <li key={a}>{a}</li>
-                    ))}
-                  </ul>
+                  <p className="label-caps">
+                    Recommended actions · {CATEGORY_LABEL[current.category]} risk
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Suggested: {current.actions.join(" + ")}
+                  </p>
+
+                  <div className="mt-4 space-y-4">
+                    <div className="space-y-2">
+                      <Label className="label-caps">Actions to be taken</Label>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" className="w-full justify-between sm:w-80">
+                            <span className="truncate">
+                              {actions.actions.length > 0
+                                ? actions.actions.join(", ")
+                                : "Select actions"}
+                            </span>
+                            <ChevronDown className="size-4 opacity-60" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-72 bg-popover">
+                          {ACTION_OPTIONS.map((option) => (
+                            <DropdownMenuCheckboxItem
+                              key={option}
+                              checked={actions.actions.includes(option)}
+                              onSelect={(e) => e.preventDefault()}
+                              onCheckedChange={() => toggleAction(option)}
+                            >
+                              {option}
+                            </DropdownMenuCheckboxItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    {actions.actions.includes("Add Reserve") && (
+                      <div className="space-y-2 sm:w-80">
+                        <Label className="label-caps">Reserve amount</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          placeholder="0.00"
+                          value={actions.reserve_amount ?? ""}
+                          onChange={(e) =>
+                            setActions((p) => ({
+                              ...p,
+                              reserve_amount:
+                                e.target.value === "" ? undefined : Math.max(0, Number(e.target.value) || 0),
+                            }))
+                          }
+                        />
+                      </div>
+                    )}
+
+                    {actions.actions.includes("Pause Payout") && (
+                      <div className="space-y-2 sm:w-80">
+                        <Label className="label-caps">Payout paused until</Label>
+                        <Input
+                          type="date"
+                          value={actions.pause_until ?? ""}
+                          onChange={(e) =>
+                            setActions((p) => ({ ...p, pause_until: e.target.value || undefined }))
+                          }
+                        />
+                      </div>
+                    )}
+
+                    <Button variant="secondary" onClick={saveActions}>
+                      Save actions
+                    </Button>
+
+                    {r.decision_actions && r.decision_actions.actions.length > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        Applied: {r.decision_actions.actions.join(" + ")}
+                        {r.decision_actions.reserve_amount !== undefined &&
+                          ` · reserve ${r.decision_actions.reserve_amount}`}
+                        {r.decision_actions.pause_until &&
+                          ` · payouts paused until ${r.decision_actions.pause_until}`}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
 
