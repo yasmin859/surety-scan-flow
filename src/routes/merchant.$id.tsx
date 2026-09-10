@@ -381,14 +381,127 @@ function MerchantDetail() {
             </section>
 
             <section className="panel p-6">
-              <h2 className="text-lg font-semibold">Stage 3 — final decision</h2>
+              <h2 className="text-lg font-semibold">Merchant assessment history</h2>
+              <p className="mb-4 text-sm text-muted-foreground">
+                How this merchant's risk profile has changed over time.
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left">
+                      <th className="py-2 pr-4 font-medium text-muted-foreground">Assessment</th>
+                      <th className="py-2 pr-4 font-medium text-muted-foreground">Date</th>
+                      <th className="py-2 pr-4 font-medium text-muted-foreground">Fraud</th>
+                      <th className="py-2 pr-4 font-medium text-muted-foreground">Chargebacks</th>
+                      <th className="py-2 pr-4 font-medium text-muted-foreground">Refunds</th>
+                      <th className="py-2 pr-4 font-medium text-muted-foreground">Risk</th>
+                      <th className="py-2 font-medium text-muted-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((h) => (
+                      <tr key={h.id} className="border-b border-border/60 last:border-0 align-top">
+                        <td className="py-2 pr-4 font-medium">{h.label}</td>
+                        <td className="py-2 pr-4 font-mono text-xs text-muted-foreground">
+                          {fmtDate(h.date)}
+                        </td>
+                        <td className="py-2 pr-4 font-mono">{pct(h.metrics?.fraud_score)}</td>
+                        <td className="py-2 pr-4 font-mono">{pct(h.metrics?.chargebacks)}</td>
+                        <td className="py-2 pr-4 font-mono">{pct(h.metrics?.refunds)}</td>
+                        <td className="py-2 pr-4">
+                          <RiskBadge category={h.category} size="sm" />
+                        </td>
+                        <td className="py-2 text-muted-foreground">{h.actions.join(" + ")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="panel p-6">
+              <h2 className="text-lg font-semibold">Stage 3 — post-trial decision</h2>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                <span className="label-caps">Assessment type</span>
+                <span className="rounded-full border border-border bg-surface-strong/60 px-3 py-1 font-medium">
+                  {isFirstAssessment ? "First Assessment" : (current?.label ?? "Reassessment")}
+                </span>
+              </div>
+
+              {isFirstAssessment ? (
+                <p className="mt-4 rounded-lg border border-border bg-surface-strong/60 p-4 text-sm text-muted-foreground">
+                  No previous assessment available — First Assessment.
+                </p>
+              ) : (
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-lg border border-border bg-surface-strong/60 p-4">
+                    <p className="label-caps">Previous assessment · {previous?.label}</p>
+                    <div className="mt-3 space-y-2 text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">Risk</span>
+                        {previous && <RiskBadge category={previous.category} size="sm" />}
+                      </div>
+                      <Row label="Fraud score" value={pct(previous?.metrics?.fraud_score)} />
+                      <Row label="Chargeback rate" value={pct(previous?.metrics?.chargebacks)} />
+                      <Row label="Refund rate" value={pct(previous?.metrics?.refunds)} />
+                      <p className="pt-1 text-muted-foreground">
+                        Actions: {previous?.actions.join(" + ")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-primary/40 bg-surface-strong/60 p-4">
+                    <p className="label-caps">Current assessment · {current?.label}</p>
+                    <div className="mt-3 space-y-2 text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">Risk</span>
+                        {current && <RiskBadge category={current.category} size="sm" />}
+                      </div>
+                      <Row label="Fraud score" value={pct(current?.metrics?.fraud_score)} />
+                      <Row label="Chargeback rate" value={pct(current?.metrics?.chargebacks)} />
+                      <Row label="Refund rate" value={pct(current?.metrics?.refunds)} />
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-2 rounded-lg border border-border bg-surface-strong/60 p-4">
+                    <p className="label-caps">Change since previous assessment</p>
+                    <ul className="mt-2 space-y-1 text-sm">
+                      <li>Fraud score: {delta(previous?.metrics?.fraud_score, current?.metrics?.fraud_score)}</li>
+                      <li>
+                        Chargeback rate:{" "}
+                        {delta(previous?.metrics?.chargebacks, current?.metrics?.chargebacks)}
+                      </li>
+                      <li>Refund rate: {delta(previous?.metrics?.refunds, current?.metrics?.refunds)}</li>
+                      <li>
+                        Risk category:{" "}
+                        {previous && current
+                          ? `${CATEGORY_LABEL[previous.category]} → ${CATEGORY_LABEL[current.category]}`
+                          : "—"}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {current && (
+                <div className="mt-5 rounded-lg border border-border bg-surface-strong/60 p-4">
+                  <p className="label-caps">Recommended actions · {CATEGORY_LABEL[current.category]} risk</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+                    {current.actions.map((a) => (
+                      <li key={a}>{a}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {!r.stage2 ? (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Complete Stage 2 monitoring before issuing a decision.
+                <p className="mt-5 text-sm text-muted-foreground">
+                  Record Stage 2 monitoring data to issue a formal decision.
                 </p>
               ) : (
                 <>
-                  <Button className="mt-4" onClick={finalise}>
+                  <Button className="mt-5" onClick={finalise}>
                     {r.final_decision ? "Recalculate decision" : "Issue final decision"}
                   </Button>
                   {r.final_decision && (
