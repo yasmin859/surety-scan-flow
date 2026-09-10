@@ -164,6 +164,8 @@ export interface MerchantRecord {
   } | null;
 
   final_decision: string | null;
+  /** Stage 3 actions chosen by the agent, with reserve amount / pause date. */
+  decision_actions?: DecisionActions;
   /** Operational only — excluded from scoring. */
   account_health?: AccountHealth;
   /** Chronological assessment history — newest entry last. Never overwritten. */
