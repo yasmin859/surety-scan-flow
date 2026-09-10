@@ -64,13 +64,34 @@ function MerchantDetail() {
   const [metrics, setMetrics] = useState<ActualMetrics>({
     chargebacks: 0,
     refunds: 0,
+    fraud_score: 0,
   });
   const [health, setHealth] = useState<AccountHealth>(EMPTY_ACCOUNT_HEALTH);
 
   useEffect(() => {
-    const r = getRecord(id);
-    setRecord(r ?? null);
-    if (r?.stage2) setMetrics(r.stage2.actual_metrics);
+    let r = getRecord(id) ?? null;
+    // Seed the history with the Stage 1 initial assessment on first view.
+    if (r && r.assessment && (!r.history || r.history.length === 0)) {
+      const seeded: MerchantRecord = {
+        ...r,
+        history: [
+          {
+            id: crypto.randomUUID(),
+            label: "Initial Assessment",
+            date: r.created_at,
+            kind: "initial",
+            metrics: null,
+            total_score: r.assessment.total_score,
+            category: r.assessment.category,
+            actions: recommendedActions(r.assessment.category),
+          },
+        ],
+      };
+      upsertRecord(seeded);
+      r = seeded;
+    }
+    setRecord(r);
+    if (r?.stage2) setMetrics({ fraud_score: 0, ...r.stage2.actual_metrics });
     setHealth(r?.account_health ?? EMPTY_ACCOUNT_HEALTH);
   }, [id]);
 
