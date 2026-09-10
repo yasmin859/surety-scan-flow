@@ -98,6 +98,8 @@ export interface AccountHealth {
   followup_ticket: string;
   contact_status: ContactStatus;
   date_contacted: string;
+  /** Link to the Stripe connected account — captured at monitoring time. */
+  connected_account_link?: string;
 }
 
 export const EMPTY_ACCOUNT_HEALTH: AccountHealth = {
@@ -107,6 +109,7 @@ export const EMPTY_ACCOUNT_HEALTH: AccountHealth = {
   followup_ticket: "",
   contact_status: "Not Contacted",
   date_contacted: "",
+  connected_account_link: "",
 };
 
 
@@ -717,6 +720,7 @@ export function compareStage2(expected: Category, actual: Category): Variance {
 
 export function decide(expected: Category, variance: Variance): string {
   if (expected === "REJECTED") return "REJECTED - NOT ONBOARDED";
-  if (expected === "HIGH" || variance === "UNDER-ESTIMATED RISK") return "ESCALATE / RESTRICT";
+  if (expected === "MEDIUM" || expected === "HIGH" || variance === "UNDER-ESTIMATED RISK")
+    return "UNDER MONITORING";
   return "STANDARD TERMS";
 }
