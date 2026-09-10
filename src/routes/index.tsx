@@ -131,14 +131,16 @@ function Dashboard() {
 
                   <StageChip stage={r.stage} />
 
-                  {r.assessment ? (
+                  {(() => {
+                    const latest = latestOf(r);
+                    return latest ? (
                     <>
                       <span className="font-mono text-lg font-semibold">
-                        {r.assessment.total_score.toFixed(2)}
+                        {latest.total_score.toFixed(2)}
                       </span>
-                      <RiskBadge category={r.assessment.category} />
+                      <RiskBadge category={latest.category} />
                       <span className="hidden font-mono text-xs text-muted-foreground sm:inline">
-                        {r.assessment.monitoring_days}
+                        {latest.label}
                       </span>
                     </>
                   ) : (
