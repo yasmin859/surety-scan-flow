@@ -119,7 +119,7 @@ function MerchantDetail() {
       r = seeded;
     }
     setRecord(r);
-    if (r?.stage2) setMetrics({ fraud_score: 0, ...r.stage2.actual_metrics });
+    if (r?.stage2) setMetrics({ fraud_score: 0, complaints: 0, ...r.stage2.actual_metrics });
     setHealth(r?.account_health ?? EMPTY_ACCOUNT_HEALTH);
     const latest = r?.history?.[r.history.length - 1];
     setActions(
