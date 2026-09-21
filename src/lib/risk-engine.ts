@@ -114,10 +114,12 @@ export const EMPTY_ACCOUNT_HEALTH: AccountHealth = {
 
 export interface ActualMetrics {
   chargebacks: number;
-  refunds: number;
-  /** Monitoring-only fraud score (%). Recorded for trend context, not weighted. */
+  /** Complaint rate (%) observed during monitoring. */
+  complaints: number;
+  /** Monitoring fraud score (0–1 scale) used as a risk threshold/override. */
   fraud_score?: number;
 }
+
 
 
 export interface ScoreLine {
@@ -376,9 +378,15 @@ export const WEIGHTS = {
 /** Thresholds used for "high" flags in historical and fraud-signal scoring. */
 export const THRESHOLDS = {
   chargeback_high: 0.9, // %
-  refund_high: 8, // %
   fraud_signal_high: 80, // email/IP fraud score
+  /** Stage 2 monitoring fraud score bands (0–1 scale). */
+  fraud_score_medium: 0.2,
+  fraud_score_high: 0.5,
+  /** Stage 2 complaint rate bands (%). */
+  complaint_medium: 20,
+  complaint_high: 40,
 };
+
 
 /** Tiered average-order-value penalty (replaces the old flat €250+ rule). */
 export const AOV_TIERS: { min: number; max: number; penalty: number }[] = [
@@ -666,23 +674,50 @@ const CATEGORY_RANK: Record<Category, number> = { REJECTED: 0, LOW: 1, MEDIUM: 2
 
 /**
  * Observed Historical Performance sub-score (1-5) derived purely from realised
- * losses — chargebacks and refunds.
+ * losses — chargebacks.
  */
 export function observedPerformanceScore(a: ActualMetrics): number {
   let score = 1;
   if (a.chargebacks > THRESHOLDS.chargeback_high) score += 1;
-  if (a.refunds > THRESHOLDS.refund_high) score += 0.5;
 
   return round2(clamp(score, 1, 5));
+}
+
+/** Fraud score factor — a threshold/override, never added to another score. */
+export function fraudScoreFactor(fraudScore?: number): Category {
+  const f = Number(fraudScore) || 0;
+  if (f >= THRESHOLDS.fraud_score_high) return "HIGH";
+  if (f >= THRESHOLDS.fraud_score_medium) return "MEDIUM";
+  return "LOW";
+}
+
+/** Complaint rate factor, calculated independently of the fraud score. */
+export function complaintFactor(complaints?: number): Category {
+  const c = Number(complaints) || 0;
+  if (c > THRESHOLDS.complaint_high) return "HIGH";
+  if (c > THRESHOLDS.complaint_medium) return "MEDIUM";
+  return "LOW";
+}
+
+/**
+ * Highest applicable risk level. Factors are never summed — two MEDIUM
+ * factors stay MEDIUM. REJECTED always wins.
+ */
+export function escalateCategory(...categories: Category[]): Category {
+  if (categories.includes("REJECTED")) return "REJECTED";
+  return categories.reduce(
+    (worst, c) => (CATEGORY_RANK[c] > CATEGORY_RANK[worst] ? c : worst),
+    "LOW" as Category,
+  );
 }
 
 /** Derives an observed risk category from realised losses only. */
 export function observedCategory(a: ActualMetrics): Category {
   const p = observedPerformanceScore(a);
-  if (p <= 2.0) return "LOW";
-  if (p <= 3.0) return "MEDIUM";
-  return "HIGH";
+  const base: Category = p <= 2.0 ? "LOW" : p <= 3.0 ? "MEDIUM" : "HIGH";
+  return escalateCategory(base, fraudScoreFactor(a.fraud_score), complaintFactor(a.complaints));
 }
+
 
 export interface Stage2Evaluation {
   performance_score: number;
@@ -694,7 +729,16 @@ export interface Stage2Evaluation {
   /** True when an upward recalculation was suppressed by the performance-first rule. */
   capped: boolean;
   note: string;
+  /** Independent override factors. */
+  fraud_factor: Category;
+  complaint_factor: Category;
+  /** Calculated risk before the fraud / complaint overrides. */
+  calculated_category: Category;
+  /** Highest of calculated risk, fraud factor and complaint factor. */
+  final_category: Category;
+  override_note: string;
 }
+
 
 /**
  * Performance-first override: the total risk score may only rise when the
@@ -725,6 +769,24 @@ export function evaluateStage2(assessment: Assessment, a: ActualMetrics): Stage2
 
   const outcome = observedCategory(a);
 
+  const fraudFactor = fraudScoreFactor(a.fraud_score);
+  const complaint = complaintFactor(a.complaints);
+  const calculated: Category =
+    assessment.category === "REJECTED" ? "REJECTED" : categorise(recalculated);
+  const finalCategory = escalateCategory(calculated, fraudFactor, complaint);
+
+  const reasons: string[] = [];
+  if (fraudFactor !== "LOW")
+    reasons.push(
+      `Fraud score ${(Number(a.fraud_score) || 0).toFixed(2)} → ${CATEGORY_LABEL[fraudFactor]}`,
+    );
+  if (complaint !== "LOW")
+    reasons.push(`Complaints ${Number(a.complaints) || 0}% → ${CATEGORY_LABEL[complaint]}`);
+  const overrideNote =
+    reasons.length === 0
+      ? "Fraud score and complaint rate within tolerance — no override applied."
+      : `${reasons.join(" · ")}. Highest applicable level used (factors are never summed): ${CATEGORY_LABEL[finalCategory]}.`;
+
   return {
     performance_score: performance,
     performance_healthy: healthy,
@@ -734,8 +796,14 @@ export function evaluateStage2(assessment: Assessment, a: ActualMetrics): Stage2
     recalculated_total: recalculated,
     capped,
     note,
+    fraud_factor: fraudFactor,
+    complaint_factor: complaint,
+    calculated_category: calculated,
+    final_category: finalCategory,
+    override_note: overrideNote,
   };
 }
+
 
 export function compareStage2(expected: Category, actual: Category): Variance {
   const d = CATEGORY_RANK[actual] - CATEGORY_RANK[expected];

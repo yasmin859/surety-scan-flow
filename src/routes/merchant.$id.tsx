@@ -88,9 +88,10 @@ function MerchantDetail() {
   const [record, setRecord] = useState<MerchantRecord | null | undefined>(undefined);
   const [metrics, setMetrics] = useState<ActualMetrics>({
     chargebacks: 0,
-    refunds: 0,
+    complaints: 0,
     fraud_score: 0,
   });
+
   const [health, setHealth] = useState<AccountHealth>(EMPTY_ACCOUNT_HEALTH);
   const [actions, setActions] = useState<DecisionActions>({ actions: [] });
 
@@ -118,7 +119,12 @@ function MerchantDetail() {
       r = seeded;
     }
     setRecord(r);
-    if (r?.stage2) setMetrics({ fraud_score: 0, ...r.stage2.actual_metrics });
+    if (r?.stage2)
+      setMetrics({
+        chargebacks: r.stage2.actual_metrics.chargebacks ?? 0,
+        complaints: r.stage2.actual_metrics.complaints ?? 0,
+        fraud_score: r.stage2.actual_metrics.fraud_score ?? 0,
+      });
     setHealth(r?.account_health ?? EMPTY_ACCOUNT_HEALTH);
     const latest = r?.history?.[r.history.length - 1];
     setActions(
@@ -198,7 +204,7 @@ function MerchantDetail() {
   const saveStage2 = () => {
     if (!assessment) return;
     const evaluation = evaluateStage2(assessment, metrics);
-    const category = categorise(evaluation.recalculated_total);
+    const category = evaluation.final_category;
     const entry: AssessmentEntry = {
       id: crypto.randomUUID(),
       label: nextAssessmentLabel(history),
@@ -206,11 +212,10 @@ function MerchantDetail() {
       kind: "monitoring",
       metrics: { ...metrics },
       total_score: evaluation.recalculated_total,
-      category: assessment.category === "REJECTED" ? "REJECTED" : category,
-      actions: recommendedActions(
-        assessment.category === "REJECTED" ? "REJECTED" : category,
-      ),
+      category,
+      actions: recommendedActions(category),
     };
+
     const updated: MerchantRecord = {
       ...r,
       stage: 2,
@@ -222,7 +227,7 @@ function MerchantDetail() {
         performance_score: evaluation.performance_score,
         recalculated_total: evaluation.recalculated_total,
         capped: evaluation.capped,
-        note: evaluation.note,
+        note: `${evaluation.note} ${evaluation.override_note}`,
       },
       final_decision: null,
     };
@@ -337,13 +342,13 @@ function MerchantDetail() {
             <section className="panel p-6">
               <h2 className="text-lg font-semibold">Stage 2 — monitoring validation</h2>
               <p className="mb-4 text-sm text-muted-foreground">
-                Performance-first: the total score can only rise if realised losses — chargebacks and
-                refunds — worsen.
+                Fraud score and complaint rate are assessed independently as thresholds — never
+                summed. The highest applicable risk level wins.
               </p>
 
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <Label className="label-caps">Fraud score (%)</Label>
+                  <Label className="label-caps">Fraud score</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -353,6 +358,9 @@ function MerchantDetail() {
                       setMetrics((p) => ({ ...p, fraud_score: Math.max(0, Number(e.target.value) || 0) }))
                     }
                   />
+                  <p className="text-xs text-muted-foreground">
+                    &lt;0.20 no change · 0.20–0.49 medium · ≥0.50 high
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label className="label-caps">Chargebacks (%)</Label>
@@ -367,16 +375,19 @@ function MerchantDetail() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="label-caps">Refunds (%)</Label>
+                  <Label className="label-caps">Complaints (%)</Label>
                   <Input
                     type="number"
                     step="0.01"
                     min={0}
-                    value={metrics.refunds}
+                    value={metrics.complaints}
                     onChange={(e) =>
-                      setMetrics((p) => ({ ...p, refunds: Math.max(0, Number(e.target.value) || 0) }))
+                      setMetrics((p) => ({ ...p, complaints: Math.max(0, Number(e.target.value) || 0) }))
                     }
                   />
+                  <p className="text-xs text-muted-foreground">
+                    ≤20% no change · &gt;20–40% medium · &gt;40% high
+                  </p>
                 </div>
               </div>
 
@@ -384,6 +395,7 @@ function MerchantDetail() {
                 Monitoring data is typically refreshed every ~3 months. Each save creates a new
                 assessment record — previous assessments are kept.
               </p>
+
 
               <Button className="mt-4" onClick={saveStage2}>
                 Record {nextAssessmentLabel(history)}
@@ -430,9 +442,11 @@ function MerchantDetail() {
                     <p className="label-caps">Risk drivers — actual performance</p>
                     <ul className="mt-2 space-y-1 text-sm">
                       <li>
-                        Chargeback losses: {r.stage2.actual_metrics.chargebacks}% · Refunds:{" "}
-                        {r.stage2.actual_metrics.refunds}%
+                        Chargeback losses: {r.stage2.actual_metrics.chargebacks}% · Complaints:{" "}
+                        {r.stage2.actual_metrics.complaints ?? 0}% · Fraud score:{" "}
+                        {r.stage2.actual_metrics.fraud_score ?? 0}
                       </li>
+
                       <li className="opacity-90">{r.stage2.note}</li>
                     </ul>
                   </div>
@@ -454,7 +468,7 @@ function MerchantDetail() {
                       <th className="py-2 pr-4 font-medium text-muted-foreground">Date</th>
                       <th className="py-2 pr-4 font-medium text-muted-foreground">Fraud</th>
                       <th className="py-2 pr-4 font-medium text-muted-foreground">Chargebacks</th>
-                      <th className="py-2 pr-4 font-medium text-muted-foreground">Refunds</th>
+                      <th className="py-2 pr-4 font-medium text-muted-foreground">Complaints</th>
                       <th className="py-2 pr-4 font-medium text-muted-foreground">Risk</th>
                       <th className="py-2 font-medium text-muted-foreground">Actions</th>
                     </tr>
@@ -468,7 +482,7 @@ function MerchantDetail() {
                         </td>
                         <td className="py-2 pr-4 font-mono">{pct(h.metrics?.fraud_score)}</td>
                         <td className="py-2 pr-4 font-mono">{pct(h.metrics?.chargebacks)}</td>
-                        <td className="py-2 pr-4 font-mono">{pct(h.metrics?.refunds)}</td>
+                        <td className="py-2 pr-4 font-mono">{pct(h.metrics?.complaints)}</td>
                         <td className="py-2 pr-4">
                           <RiskBadge category={h.category} size="sm" />
                         </td>
@@ -505,7 +519,7 @@ function MerchantDetail() {
                       </div>
                       <Row label="Fraud score" value={pct(previous?.metrics?.fraud_score)} />
                       <Row label="Chargeback rate" value={pct(previous?.metrics?.chargebacks)} />
-                      <Row label="Refund rate" value={pct(previous?.metrics?.refunds)} />
+                      <Row label="Complaint rate" value={pct(previous?.metrics?.complaints)} />
                       <p className="pt-1 text-muted-foreground">
                         Actions: {previous?.actions.join(" + ")}
                       </p>
@@ -521,7 +535,7 @@ function MerchantDetail() {
                       </div>
                       <Row label="Fraud score" value={pct(current?.metrics?.fraud_score)} />
                       <Row label="Chargeback rate" value={pct(current?.metrics?.chargebacks)} />
-                      <Row label="Refund rate" value={pct(current?.metrics?.refunds)} />
+                      <Row label="Complaint rate" value={pct(current?.metrics?.complaints)} />
                     </div>
                   </div>
 
@@ -533,7 +547,10 @@ function MerchantDetail() {
                         Chargeback rate:{" "}
                         {delta(previous?.metrics?.chargebacks, current?.metrics?.chargebacks)}
                       </li>
-                      <li>Refund rate: {delta(previous?.metrics?.refunds, current?.metrics?.refunds)}</li>
+                      <li>
+                        Complaint rate:{" "}
+                        {delta(previous?.metrics?.complaints, current?.metrics?.complaints)}
+                      </li>
                       <li>
                         Risk category:{" "}
                         {previous && current
