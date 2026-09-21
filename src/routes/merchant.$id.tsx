@@ -437,9 +437,11 @@ function MerchantDetail() {
                     <p className="label-caps">Risk drivers — actual performance</p>
                     <ul className="mt-2 space-y-1 text-sm">
                       <li>
-                        Chargeback losses: {r.stage2.actual_metrics.chargebacks}% · Refunds:{" "}
-                        {r.stage2.actual_metrics.refunds}%
+                        Chargeback losses: {r.stage2.actual_metrics.chargebacks}% · Complaints:{" "}
+                        {r.stage2.actual_metrics.complaints ?? 0}% · Fraud score:{" "}
+                        {r.stage2.actual_metrics.fraud_score ?? 0}
                       </li>
+
                       <li className="opacity-90">{r.stage2.note}</li>
                     </ul>
                   </div>
