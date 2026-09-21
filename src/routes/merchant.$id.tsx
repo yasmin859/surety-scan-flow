@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, ChevronDown, ShieldAlert, Trash2 } from "lucide-react";
 import {
@@ -200,6 +200,14 @@ function MerchantDetail() {
   const previous = history.length > 1 ? history[history.length - 2] : null;
   const isFirstAssessment = history.length <= 1;
 
+  // Live Stage 2 evaluation — derived from the current form inputs on every
+  // render, so the displayed Total Weighted Score always matches what
+  // "Record Assessment" would persist. Same engine function, no drift.
+  const live = useMemo(
+    () => (assessment ? evaluateStage2(assessment, metrics) : null),
+    [assessment, metrics],
+  );
+
   /** Appends a NEW assessment record — previous assessments are never overwritten. */
   const saveStage2 = () => {
     if (!assessment) return;
@@ -343,8 +351,34 @@ function MerchantDetail() {
               <h2 className="text-lg font-semibold">Stage 2 — monitoring validation</h2>
               <p className="mb-4 text-sm text-muted-foreground">
                 Fraud score and complaint rate are assessed independently as thresholds — never
-                summed. The highest applicable risk level wins.
+               summed. The highest applicable risk level wins.
               </p>
+
+              {live && (
+                <div className="mb-5 flex flex-wrap items-center gap-4 rounded-lg border border-border bg-surface-strong/60 p-4">
+                  <div>
+                    <p className="label-caps">Total weighted score (live)</p>
+                    <p className="mt-1 font-mono text-2xl font-semibold">
+                      {live.recalculated_total.toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="label-caps">Risk level (live)</p>
+                    <div className="mt-1">
+                      <RiskBadge category={live.final_category} size="sm" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="label-caps">Observed performance (live)</p>
+                    <p className="mt-1 font-mono text-lg font-semibold">
+                      {live.performance_score.toFixed(2)}
+                    </p>
+                  </div>
+                  <p className="w-full text-xs text-muted-foreground">
+                    Recalculates as you type — identical to the result recorded by the button below.
+                  </p>
+                </div>
+              )}
 
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
