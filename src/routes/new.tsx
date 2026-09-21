@@ -134,7 +134,7 @@ const emptyMerchant: Merchant = {
   merchant_country: "United Kingdom",
   operating_country: "United Kingdom",
 
-  industry: "Retail / eCommerce",
+  industry: "2.3 Clothes and fashion accessories",
   email_domain_type: "Verified corporate domain",
   ip_fraud_score: 0,
   stripe_account_exists: true,
