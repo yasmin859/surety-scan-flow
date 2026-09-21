@@ -222,7 +222,7 @@ function MerchantDetail() {
         performance_score: evaluation.performance_score,
         recalculated_total: evaluation.recalculated_total,
         capped: evaluation.capped,
-        note: evaluation.note,
+        note: `${evaluation.note} ${evaluation.override_note}`,
       },
       final_decision: null,
     };
