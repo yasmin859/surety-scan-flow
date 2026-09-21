@@ -378,9 +378,15 @@ export const WEIGHTS = {
 /** Thresholds used for "high" flags in historical and fraud-signal scoring. */
 export const THRESHOLDS = {
   chargeback_high: 0.9, // %
-  refund_high: 8, // %
   fraud_signal_high: 80, // email/IP fraud score
+  /** Stage 2 monitoring fraud score bands (0–1 scale). */
+  fraud_score_medium: 0.2,
+  fraud_score_high: 0.5,
+  /** Stage 2 complaint rate bands (%). */
+  complaint_medium: 20,
+  complaint_high: 40,
 };
+
 
 /** Tiered average-order-value penalty (replaces the old flat €250+ rule). */
 export const AOV_TIERS: { min: number; max: number; penalty: number }[] = [
