@@ -177,6 +177,16 @@ function MerchantDetail() {
   };
 
 
+  // Live Stage 2 evaluation — derived from the current form inputs on every
+  // render, so the displayed Total Weighted Score always matches what
+  // "Record Assessment" would persist. Same engine function, no drift.
+  // Declared before any early return so hook order stays stable.
+  const liveAssessment = record ? record.assessment : null;
+  const live = useMemo(
+    () => (liveAssessment ? evaluateStage2(liveAssessment, metrics) : null),
+    [liveAssessment, metrics],
+  );
+
   if (record === undefined) {
     return <main className="mx-auto max-w-5xl px-6 py-16 text-muted-foreground">Loading…</main>;
   }
@@ -200,13 +210,6 @@ function MerchantDetail() {
   const previous = history.length > 1 ? history[history.length - 2] : null;
   const isFirstAssessment = history.length <= 1;
 
-  // Live Stage 2 evaluation — derived from the current form inputs on every
-  // render, so the displayed Total Weighted Score always matches what
-  // "Record Assessment" would persist. Same engine function, no drift.
-  const live = useMemo(
-    () => (assessment ? evaluateStage2(assessment, metrics) : null),
-    [assessment, metrics],
-  );
 
   /** Appends a NEW assessment record — previous assessments are never overwritten. */
   const saveStage2 = () => {
