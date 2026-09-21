@@ -463,7 +463,7 @@ function MerchantDetail() {
                       <th className="py-2 pr-4 font-medium text-muted-foreground">Date</th>
                       <th className="py-2 pr-4 font-medium text-muted-foreground">Fraud</th>
                       <th className="py-2 pr-4 font-medium text-muted-foreground">Chargebacks</th>
-                      <th className="py-2 pr-4 font-medium text-muted-foreground">Refunds</th>
+                      <th className="py-2 pr-4 font-medium text-muted-foreground">Complaints</th>
                       <th className="py-2 pr-4 font-medium text-muted-foreground">Risk</th>
                       <th className="py-2 font-medium text-muted-foreground">Actions</th>
                     </tr>
@@ -477,7 +477,7 @@ function MerchantDetail() {
                         </td>
                         <td className="py-2 pr-4 font-mono">{pct(h.metrics?.fraud_score)}</td>
                         <td className="py-2 pr-4 font-mono">{pct(h.metrics?.chargebacks)}</td>
-                        <td className="py-2 pr-4 font-mono">{pct(h.metrics?.refunds)}</td>
+                        <td className="py-2 pr-4 font-mono">{pct(h.metrics?.complaints)}</td>
                         <td className="py-2 pr-4">
                           <RiskBadge category={h.category} size="sm" />
                         </td>
@@ -514,7 +514,7 @@ function MerchantDetail() {
                       </div>
                       <Row label="Fraud score" value={pct(previous?.metrics?.fraud_score)} />
                       <Row label="Chargeback rate" value={pct(previous?.metrics?.chargebacks)} />
-                      <Row label="Refund rate" value={pct(previous?.metrics?.refunds)} />
+                      <Row label="Complaint rate" value={pct(previous?.metrics?.complaints)} />
                       <p className="pt-1 text-muted-foreground">
                         Actions: {previous?.actions.join(" + ")}
                       </p>
@@ -530,7 +530,7 @@ function MerchantDetail() {
                       </div>
                       <Row label="Fraud score" value={pct(current?.metrics?.fraud_score)} />
                       <Row label="Chargeback rate" value={pct(current?.metrics?.chargebacks)} />
-                      <Row label="Refund rate" value={pct(current?.metrics?.refunds)} />
+                      <Row label="Complaint rate" value={pct(current?.metrics?.complaints)} />
                     </div>
                   </div>
 
@@ -542,7 +542,10 @@ function MerchantDetail() {
                         Chargeback rate:{" "}
                         {delta(previous?.metrics?.chargebacks, current?.metrics?.chargebacks)}
                       </li>
-                      <li>Refund rate: {delta(previous?.metrics?.refunds, current?.metrics?.refunds)}</li>
+                      <li>
+                        Complaint rate:{" "}
+                        {delta(previous?.metrics?.complaints, current?.metrics?.complaints)}
+                      </li>
                       <li>
                         Risk category:{" "}
                         {previous && current

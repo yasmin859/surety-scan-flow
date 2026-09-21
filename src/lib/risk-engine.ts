@@ -674,7 +674,7 @@ const CATEGORY_RANK: Record<Category, number> = { REJECTED: 0, LOW: 1, MEDIUM: 2
 
 /**
  * Observed Historical Performance sub-score (1-5) derived purely from realised
- * losses — chargebacks and refunds.
+ * losses — chargebacks.
  */
 export function observedPerformanceScore(a: ActualMetrics): number {
   let score = 1;
