@@ -71,7 +71,6 @@ export interface Merchant {
 }
 
 export interface Legitimacy {
-  registered_business: boolean;
   website_live: boolean;
 }
 
@@ -305,28 +304,28 @@ export interface IndustryDef {
 
 export const INDUSTRY_CATALOG: IndustryDef[] = [
   // 1. Digital items
-  { name: "1.1 Digital assets", risk: 5, status: "allowed" },
-  { name: "1.2 Digital services", risk: 3, status: "allowed" },
-  { name: "1.3 Digital event ticket resales", risk: 4, status: "allowed" },
+  { name: "Digital assets", risk: 5, status: "allowed" },
+  { name: "Digital services", risk: 3, status: "allowed" },
+  { name: "Digital event ticket resales", risk: 4, status: "allowed" },
   // 2. Physical items
-  { name: "2.1 Vehicle sales", risk: 4, status: "allowed" },
-  { name: "2.2 Animals / pets", risk: 4, status: "allowed" },
-  { name: "2.3 Clothes and fashion accessories", risk: 2, status: "allowed" },
-  { name: "2.4 Furniture and home goods", risk: 2, status: "allowed" },
-  { name: "2.5 Collectibles and memorabilia", risk: 4, status: "allowed" },
-  { name: "2.6 Electronics and gadgets", risk: 4, status: "allowed" },
-  { name: "2.7 Custom or made-to-order goods", risk: 2, status: "allowed" },
-  { name: "2.8 Tools, equipment and instruments", risk: 3, status: "allowed" },
-  { name: "2.9 Luxury items and fine jewellery", risk: 5, status: "allowed" },
-  { name: "2.10 Art", risk: 5, status: "allowed" },
-  { name: "2.11 Bulk and raw materials", risk: 3, status: "allowed" },
+  { name: "Vehicle sales", risk: 4, status: "allowed" },
+  { name: "Animals / pets", risk: 4, status: "allowed" },
+  { name: "Clothes and fashion accessories", risk: 2, status: "allowed" },
+  { name: "Furniture and home goods", risk: 2, status: "allowed" },
+  { name: "Collectibles and memorabilia", risk: 4, status: "allowed" },
+  { name: "Electronics and gadgets", risk: 4, status: "allowed" },
+  { name: "Custom or made-to-order goods", risk: 2, status: "allowed" },
+  { name: "Tools, equipment and instruments", risk: 3, status: "allowed" },
+  { name: "Luxury items and fine jewellery", risk: 5, status: "allowed" },
+  { name: "Art", risk: 5, status: "allowed" },
+  { name: "Bulk and raw materials", risk: 3, status: "allowed" },
   // 3. Services
-  { name: "3.1 Vehicle reservation payments", risk: 4, status: "allowed" },
-  { name: "3.2 Transport of persons", risk: 3, status: "allowed" },
-  { name: "3.3 Transport of goods", risk: 3, status: "allowed" },
-  { name: "3.4 Property rentals / accommodation", risk: 4, status: "allowed" },
-  { name: "3.5 Construction Services", risk: 3, status: "allowed" },
-  { name: "3.6 Other services (general)", risk: 2, status: "allowed" },
+  { name: "Vehicle reservation payments", risk: 4, status: "allowed" },
+  { name: "Transport of persons", risk: 3, status: "allowed" },
+  { name: "Transport of goods", risk: 3, status: "allowed" },
+  { name: "Property rentals / accommodation", risk: 4, status: "allowed" },
+  { name: "Construction Services", risk: 3, status: "allowed" },
+  { name: "Other services (general)", risk: 2, status: "allowed" },
   // Stripe restricted / conditional categories
   { name: "Supplements & Nutraceuticals", risk: 4, status: "restricted" },
   { name: "CBD & Hemp Products", risk: 5, status: "restricted" },
@@ -353,7 +352,13 @@ export const INDUSTRY_CATALOG: IndustryDef[] = [
 export const INDUSTRIES = INDUSTRY_CATALOG.map((i) => i.name);
 
 export function industryDef(name: string): IndustryDef {
-  return INDUSTRY_CATALOG.find((i) => i.name === name) ?? { name, risk: 3, status: "allowed" };
+  const found = INDUSTRY_CATALOG.find((i) => i.name === name);
+  if (found) return found;
+  // Legacy records stored numbered names ("2.3 Clothes and fashion accessories") —
+  // strip the numeric prefix so old assessments keep their original risk.
+  const legacy = INDUSTRY_CATALOG.find((i) => i.name === name.replace(/^\d+(\.\d+)?\s+/, ""));
+  if (legacy) return legacy;
+  return { name, risk: 3, status: "allowed" };
 }
 
 export const STRIPE_RESTRICTED_URL = "https://stripe.com/ie/legal/restricted-businesses";
@@ -368,13 +373,30 @@ export const WEIGHTS = {
 } as const;
 
 
-/** Thresholds used for "high" flags in historical, AOV and fraud-signal scoring. */
+/** Thresholds used for "high" flags in historical and fraud-signal scoring. */
 export const THRESHOLDS = {
   chargeback_high: 0.9, // %
   refund_high: 8, // %
-  aov_high: 250, // currency units
   fraud_signal_high: 80, // email/IP fraud score
 };
+
+/** Tiered average-order-value penalty (replaces the old flat €250+ rule). */
+export const AOV_TIERS: { min: number; max: number; penalty: number }[] = [
+  { min: 250, max: 750, penalty: 0.3 },
+  { min: 750, max: 1000, penalty: 0.5 },
+  { min: 1000, max: 2000, penalty: 1.0 },
+  { min: 2000, max: 5000, penalty: 2.0 },
+  { min: 5000, max: Infinity, penalty: 3.5 },
+];
+
+export function aovPenalty(aov: number): { penalty: number; tierLabel: string } {
+  const v = Number(aov) || 0;
+  const tier = AOV_TIERS.find((t) => v >= t.min && v < t.max);
+  if (!tier) return { penalty: 0, tierLabel: "" };
+  const fmt = (n: number) => `€${n.toLocaleString("en-IE")}`;
+  const upper = tier.max === Infinity ? "+" : ` to <${fmt(tier.max)}`;
+  return { penalty: tier.penalty, tierLabel: `${fmt(tier.min)}${upper}` };
+}
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
@@ -390,7 +412,6 @@ export function countryScore(country: string): number {
 
 export function checkLegitimacy(l: Legitimacy): { passed: boolean; status: string; failures: string[] } {
   const labels: Record<keyof Legitimacy, string> = {
-    registered_business: "Registered business",
     website_live: "Website live",
   };
   const failures = (Object.keys(labels) as (keyof Legitimacy)[])
@@ -476,9 +497,13 @@ function scoreIndustryProduct(m: Merchant): ComponentScore {
     score += 0.3;
     lines.push({ label: "Instant delivery", value: 0.3 });
   }
-  if (m.avg_order_value >= THRESHOLDS.aov_high) {
-    score += 0.3;
-    lines.push({ label: `High average order value (≥ ${THRESHOLDS.aov_high})`, value: 0.3 });
+  const aovTier = aovPenalty(m.avg_order_value);
+  if (aovTier.penalty > 0) {
+    score += aovTier.penalty;
+    lines.push({
+      label: `Average order value (${aovTier.tierLabel})`,
+      value: aovTier.penalty,
+    });
   }
 
   return { score: round2(clamp(score, 1, 5)), lines };
