@@ -337,13 +337,13 @@ function MerchantDetail() {
             <section className="panel p-6">
               <h2 className="text-lg font-semibold">Stage 2 — monitoring validation</h2>
               <p className="mb-4 text-sm text-muted-foreground">
-                Performance-first: the total score can only rise if realised losses — chargebacks and
-                refunds — worsen.
+                Fraud score and complaint rate are assessed independently as thresholds — never
+                summed. The highest applicable risk level wins.
               </p>
 
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <Label className="label-caps">Fraud score (%)</Label>
+                  <Label className="label-caps">Fraud score</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -353,6 +353,9 @@ function MerchantDetail() {
                       setMetrics((p) => ({ ...p, fraud_score: Math.max(0, Number(e.target.value) || 0) }))
                     }
                   />
+                  <p className="text-xs text-muted-foreground">
+                    &lt;0.20 no change · 0.20–0.49 medium · ≥0.50 high
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label className="label-caps">Chargebacks (%)</Label>
@@ -367,16 +370,19 @@ function MerchantDetail() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="label-caps">Refunds (%)</Label>
+                  <Label className="label-caps">Complaints (%)</Label>
                   <Input
                     type="number"
                     step="0.01"
                     min={0}
-                    value={metrics.refunds}
+                    value={metrics.complaints}
                     onChange={(e) =>
-                      setMetrics((p) => ({ ...p, refunds: Math.max(0, Number(e.target.value) || 0) }))
+                      setMetrics((p) => ({ ...p, complaints: Math.max(0, Number(e.target.value) || 0) }))
                     }
                   />
+                  <p className="text-xs text-muted-foreground">
+                    ≤20% no change · &gt;20–40% medium · &gt;40% high
+                  </p>
                 </div>
               </div>
 
@@ -384,6 +390,7 @@ function MerchantDetail() {
                 Monitoring data is typically refreshed every ~3 months. Each save creates a new
                 assessment record — previous assessments are kept.
               </p>
+
 
               <Button className="mt-4" onClick={saveStage2}>
                 Record {nextAssessmentLabel(history)}
