@@ -199,7 +199,7 @@ function MerchantDetail() {
   const saveStage2 = () => {
     if (!assessment) return;
     const evaluation = evaluateStage2(assessment, metrics);
-    const category = categorise(evaluation.recalculated_total);
+    const category = evaluation.final_category;
     const entry: AssessmentEntry = {
       id: crypto.randomUUID(),
       label: nextAssessmentLabel(history),
@@ -207,11 +207,10 @@ function MerchantDetail() {
       kind: "monitoring",
       metrics: { ...metrics },
       total_score: evaluation.recalculated_total,
-      category: assessment.category === "REJECTED" ? "REJECTED" : category,
-      actions: recommendedActions(
-        assessment.category === "REJECTED" ? "REJECTED" : category,
-      ),
+      category,
+      actions: recommendedActions(category),
     };
+
     const updated: MerchantRecord = {
       ...r,
       stage: 2,
