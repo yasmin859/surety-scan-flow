@@ -729,7 +729,16 @@ export interface Stage2Evaluation {
   /** True when an upward recalculation was suppressed by the performance-first rule. */
   capped: boolean;
   note: string;
+  /** Independent override factors. */
+  fraud_factor: Category;
+  complaint_factor: Category;
+  /** Calculated risk before the fraud / complaint overrides. */
+  calculated_category: Category;
+  /** Highest of calculated risk, fraud factor and complaint factor. */
+  final_category: Category;
+  override_note: string;
 }
+
 
 /**
  * Performance-first override: the total risk score may only rise when the
