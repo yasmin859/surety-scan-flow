@@ -88,9 +88,10 @@ function MerchantDetail() {
   const [record, setRecord] = useState<MerchantRecord | null | undefined>(undefined);
   const [metrics, setMetrics] = useState<ActualMetrics>({
     chargebacks: 0,
-    refunds: 0,
+    complaints: 0,
     fraud_score: 0,
   });
+
   const [health, setHealth] = useState<AccountHealth>(EMPTY_ACCOUNT_HEALTH);
   const [actions, setActions] = useState<DecisionActions>({ actions: [] });
 
