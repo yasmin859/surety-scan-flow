@@ -679,18 +679,45 @@ const CATEGORY_RANK: Record<Category, number> = { REJECTED: 0, LOW: 1, MEDIUM: 2
 export function observedPerformanceScore(a: ActualMetrics): number {
   let score = 1;
   if (a.chargebacks > THRESHOLDS.chargeback_high) score += 1;
-  if (a.refunds > THRESHOLDS.refund_high) score += 0.5;
 
   return round2(clamp(score, 1, 5));
+}
+
+/** Fraud score factor — a threshold/override, never added to another score. */
+export function fraudScoreFactor(fraudScore?: number): Category {
+  const f = Number(fraudScore) || 0;
+  if (f >= THRESHOLDS.fraud_score_high) return "HIGH";
+  if (f >= THRESHOLDS.fraud_score_medium) return "MEDIUM";
+  return "LOW";
+}
+
+/** Complaint rate factor, calculated independently of the fraud score. */
+export function complaintFactor(complaints?: number): Category {
+  const c = Number(complaints) || 0;
+  if (c > THRESHOLDS.complaint_high) return "HIGH";
+  if (c > THRESHOLDS.complaint_medium) return "MEDIUM";
+  return "LOW";
+}
+
+/**
+ * Highest applicable risk level. Factors are never summed — two MEDIUM
+ * factors stay MEDIUM. REJECTED always wins.
+ */
+export function escalateCategory(...categories: Category[]): Category {
+  if (categories.includes("REJECTED")) return "REJECTED";
+  return categories.reduce(
+    (worst, c) => (CATEGORY_RANK[c] > CATEGORY_RANK[worst] ? c : worst),
+    "LOW" as Category,
+  );
 }
 
 /** Derives an observed risk category from realised losses only. */
 export function observedCategory(a: ActualMetrics): Category {
   const p = observedPerformanceScore(a);
-  if (p <= 2.0) return "LOW";
-  if (p <= 3.0) return "MEDIUM";
-  return "HIGH";
+  const base: Category = p <= 2.0 ? "LOW" : p <= 3.0 ? "MEDIUM" : "HIGH";
+  return escalateCategory(base, fraudScoreFactor(a.fraud_score), complaintFactor(a.complaints));
 }
+
 
 export interface Stage2Evaluation {
   performance_score: number;
