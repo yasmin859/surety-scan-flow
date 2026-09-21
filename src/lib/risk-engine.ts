@@ -769,6 +769,24 @@ export function evaluateStage2(assessment: Assessment, a: ActualMetrics): Stage2
 
   const outcome = observedCategory(a);
 
+  const fraudFactor = fraudScoreFactor(a.fraud_score);
+  const complaint = complaintFactor(a.complaints);
+  const calculated: Category =
+    assessment.category === "REJECTED" ? "REJECTED" : categorise(recalculated);
+  const finalCategory = escalateCategory(calculated, fraudFactor, complaint);
+
+  const reasons: string[] = [];
+  if (fraudFactor !== "LOW")
+    reasons.push(
+      `Fraud score ${(Number(a.fraud_score) || 0).toFixed(2)} → ${CATEGORY_LABEL[fraudFactor]}`,
+    );
+  if (complaint !== "LOW")
+    reasons.push(`Complaints ${Number(a.complaints) || 0}% → ${CATEGORY_LABEL[complaint]}`);
+  const overrideNote =
+    reasons.length === 0
+      ? "Fraud score and complaint rate within tolerance — no override applied."
+      : `${reasons.join(" · ")}. Highest applicable level used (factors are never summed): ${CATEGORY_LABEL[finalCategory]}.`;
+
   return {
     performance_score: performance,
     performance_healthy: healthy,
@@ -778,8 +796,14 @@ export function evaluateStage2(assessment: Assessment, a: ActualMetrics): Stage2
     recalculated_total: recalculated,
     capped,
     note,
+    fraud_factor: fraudFactor,
+    complaint_factor: complaint,
+    calculated_category: calculated,
+    final_category: finalCategory,
+    override_note: overrideNote,
   };
 }
+
 
 export function compareStage2(expected: Category, actual: Category): Variance {
   const d = CATEGORY_RANK[actual] - CATEGORY_RANK[expected];
