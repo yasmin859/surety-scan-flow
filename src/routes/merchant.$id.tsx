@@ -297,6 +297,29 @@ function MerchantDetail() {
         </div>
       </header>
 
+      <nav className="mt-5 flex flex-wrap items-center gap-2">
+        {([
+          { n: 1, label: "Stage 1 · Initial assessment", target: "stage-1" },
+          { n: 2, label: "Stage 2 · Monitoring", target: "stage-2" },
+          { n: 3, label: "Stage 3 · Decision", target: "stage-3" },
+        ] as const).map((s) => (
+          <button
+            key={s.n}
+            type="button"
+            onClick={() =>
+              document.getElementById(s.target)?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
+            className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition-colors ${
+              r.stage === s.n
+                ? "border-primary/60 bg-primary/15 text-primary"
+                : "border-border bg-surface-strong/60 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </nav>
+
       {!assessment ? (
         <div className="panel mt-8 flex items-start gap-3 border-risk-red/45 bg-risk-red/10 p-6 text-risk-red">
           <ShieldAlert className="mt-0.5 size-5 shrink-0" />
@@ -314,7 +337,7 @@ function MerchantDetail() {
       ) : (
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="space-y-6">
-            <section className="panel p-6">
+            <section id="stage-1" className="panel scroll-mt-6 p-6">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <p className="label-caps">Total weighted score</p>
