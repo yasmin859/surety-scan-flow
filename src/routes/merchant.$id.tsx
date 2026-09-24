@@ -25,6 +25,8 @@ import { AccountHealthCard } from "@/components/account-health-card";
 import { deleteRecord, getRecord, upsertRecord } from "@/lib/records-store";
 import {
   categorise,
+  chargebackRiskLabel,
+  chargebackRiskScore,
   decide,
   evaluateStage2,
   nextAssessmentLabel,
@@ -410,6 +412,16 @@ function MerchantDetail() {
                       setMetrics((p) => ({ ...p, chargebacks: Math.max(0, Number(e.target.value) || 0) }))
                     }
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Band {chargebackRiskLabel(metrics.chargebacks)} → Risk{" "}
+                    <span className="font-semibold text-foreground">
+                      {chargebackRiskScore(metrics.chargebacks)}
+                    </span>
+                    /5
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    &lt;0.1% → 1 · &lt;0.3% → 2 · &lt;0.5% → 3 · &lt;0.7% → 4 · ≥0.7% → 5
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label className="label-caps">Complaints (%)</Label>

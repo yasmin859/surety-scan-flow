@@ -673,14 +673,42 @@ export function runAssessment(m: Merchant): Assessment {
 const CATEGORY_RANK: Record<Category, number> = { REJECTED: 0, LOW: 1, MEDIUM: 2, HIGH: 3 };
 
 /**
+ * Chargeback percentage → risk score bands (sequential, mutually exclusive).
+ * <0.1 → 1 · <0.3 → 2 · <0.5 → 3 · <0.7 → 4 · ≥0.7 → 5.
+ */
+export const CHARGEBACK_BANDS: { max: number; score: number }[] = [
+  { max: 0.1, score: 1 },
+  { max: 0.3, score: 2 },
+  { max: 0.5, score: 3 },
+  { max: 0.7, score: 4 },
+  { max: 0.9, score: 5 },
+];
+
+/** Maps a chargeback percentage directly to a 1–5 risk score. */
+export function chargebackRiskScore(chargebacks?: number): number {
+  const c = Number(chargebacks) || 0;
+  for (const band of CHARGEBACK_BANDS) {
+    if (c < band.max) return band.score;
+  }
+  return 5;
+}
+
+/** Human-readable band label for a chargeback percentage. */
+export function chargebackRiskLabel(chargebacks?: number): string {
+  const c = Number(chargebacks) || 0;
+  if (c < 0.1) return "< 0.1%";
+  if (c < 0.3) return "0.1% – < 0.3%";
+  if (c < 0.5) return "0.3% – < 0.5%";
+  if (c < 0.7) return "0.5% – < 0.7%";
+  return "≥ 0.7%";
+}
+
+/**
  * Observed Historical Performance sub-score (1-5) derived purely from realised
- * losses — chargebacks.
+ * losses — chargebacks, mapped directly via the chargeback risk bands.
  */
 export function observedPerformanceScore(a: ActualMetrics): number {
-  let score = 1;
-  if (a.chargebacks > THRESHOLDS.chargeback_high) score += 1;
-
-  return round2(clamp(score, 1, 5));
+  return chargebackRiskScore(a.chargebacks);
 }
 
 /** Fraud score factor — a threshold/override, never added to another score. */
