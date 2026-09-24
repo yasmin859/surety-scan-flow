@@ -628,6 +628,15 @@ export const MONITORING: Record<Category, string> = {
   REJECTED: "Not applicable",
 };
 
+/**
+ * Monitoring window applies only to Ecommerce merchants. Marketplace and
+ * referral models (Wayflyer, StoreHero) are not monitored.
+ */
+export function monitoringWindow(model: BusinessModel, category: Category): string {
+  if (model !== "Ecommerce") return "Not applicable";
+  return MONITORING[category];
+}
+
 export const CATEGORY_LABEL: Record<Category, string> = {
   LOW: "Low",
   MEDIUM: "Medium",
@@ -661,7 +670,7 @@ export function runAssessment(m: Merchant): Assessment {
     scores,
     total_score: total,
     category,
-    monitoring_days: MONITORING[category],
+    monitoring_days: monitoringWindow(m.business_model, category),
     ...(industryGate.reason ? { rejection_reason: industryGate.reason } : {}),
   };
 }
@@ -674,14 +683,13 @@ const CATEGORY_RANK: Record<Category, number> = { REJECTED: 0, LOW: 1, MEDIUM: 2
 
 /**
  * Chargeback percentage → risk score bands (sequential, mutually exclusive).
- * <0.1 → 1 · <0.3 → 2 · <0.5 → 3 · <0.7 → 4 · ≥0.7 → 5.
+ * <0.1 → 1 · <0.3 → 2 · <0.5 → 3 · <0.9 → 4 · ≥0.9 → 5.
  */
 export const CHARGEBACK_BANDS: { max: number; score: number }[] = [
   { max: 0.1, score: 1 },
   { max: 0.3, score: 2 },
   { max: 0.5, score: 3 },
-  { max: 0.7, score: 4 },
-  { max: 0.9, score: 5 },
+  { max: 0.9, score: 4 },
 ];
 
 /** Maps a chargeback percentage directly to a 1–5 risk score. */
@@ -699,8 +707,8 @@ export function chargebackRiskLabel(chargebacks?: number): string {
   if (c < 0.1) return "< 0.1%";
   if (c < 0.3) return "0.1% – < 0.3%";
   if (c < 0.5) return "0.3% – < 0.5%";
-  if (c < 0.7) return "0.5% – < 0.7%";
-  return "≥ 0.7%";
+  if (c < 0.9) return "0.5% – < 0.9%";
+  return "≥ 0.9%";
 }
 
 /**
