@@ -420,7 +420,7 @@ function MerchantDetail() {
                     /5
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    &lt;0.1% → 1 · &lt;0.3% → 2 · &lt;0.5% → 3 · &lt;0.7% → 4 · ≥0.7% → 5
+                    &lt;0.1% → 1 · &lt;0.3% → 2 · &lt;0.5% → 3 · &lt;0.9% → 4 · ≥0.9% → 5
                   </p>
                 </div>
                 <div className="space-y-2">
