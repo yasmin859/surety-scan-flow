@@ -375,7 +375,7 @@ function MerchantDetail() {
 
             <AccountHealthCard value={health} onChange={saveHealth} />
 
-            <section className="panel p-6">
+            <section id="stage-2" className="panel scroll-mt-6 p-6">
               <h2 className="text-lg font-semibold">Stage 2 — monitoring validation</h2>
               <p className="mb-4 text-sm text-muted-foreground">
                 Fraud score and complaint rate are assessed independently as thresholds — never
@@ -566,7 +566,7 @@ function MerchantDetail() {
               </div>
             </section>
 
-            <section className="panel p-6">
+            <section id="stage-3" className="panel scroll-mt-6 p-6">
               <h2 className="text-lg font-semibold">Stage 3 — post-trial decision</h2>
 
               <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
