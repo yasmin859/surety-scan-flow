@@ -173,7 +173,7 @@ function NewAssessment() {
 
   const gate = useMemo(() => checkLegitimacy(legit), [legit]);
   const industryGate = useMemo(() => checkIndustry(m.industry), [m.industry]);
-  const preview = useMemo(() => (gate.passed ? runAssessment(m) : null), [gate.passed, m]);
+  const preview = useMemo(() => runAssessment(m), [m]);
 
   const updateTicket = (id: string, patch: Partial<MerchantTicket>) =>
 
@@ -495,29 +495,26 @@ function NewAssessment() {
         <aside className="lg:sticky lg:top-8 lg:h-fit">
           <div className="panel p-6">
             <p className="label-caps">Live preview</p>
-            {preview ? (
-              <>
-                <div className="mt-3 flex items-baseline gap-3">
-                  <span className="font-mono text-4xl font-bold">{preview.total_score.toFixed(2)}</span>
-                  <RiskBadge category={preview.category} />
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Monitoring: <span className="text-foreground">{preview.monitoring_days}</span>
-                </p>
-                {preview.rejection_reason && (
-                  <p className="mt-2 text-xs text-risk-red">{preview.rejection_reason}</p>
-                )}
-                <div className="mt-5 max-h-[46vh] overflow-y-auto pr-1">
-                  <ScoreBreakdown assessment={preview} />
-                </div>
-              </>
-            ) : (
-              <p className="mt-3 text-sm text-risk-red">
-                Legitimacy gate failed — scoring is blocked. Fix the failing checks or record the rejection.
+            <div className="mt-3 flex items-baseline gap-3">
+              <span className="font-mono text-4xl font-bold">{preview.total_score.toFixed(2)}</span>
+              <RiskBadge category={preview.category} />
+            </div>
+            {gate.failures.length > 0 && (
+              <p className="mt-2 text-xs text-risk-medium">
+                Pending: {gate.failures.join(", ")} — scoring continues; confirm when available.
               </p>
             )}
+            <p className="mt-2 text-sm text-muted-foreground">
+              Monitoring: <span className="text-foreground">{preview.monitoring_days}</span>
+            </p>
+            {preview.rejection_reason && (
+              <p className="mt-2 text-xs text-risk-red">{preview.rejection_reason}</p>
+            )}
+            <div className="mt-5 max-h-[46vh] overflow-y-auto pr-1">
+              <ScoreBreakdown assessment={preview} />
+            </div>
             <Button className="mt-6 w-full" onClick={submit}>
-              {gate.passed && preview?.category !== "REJECTED" ? "Save assessment" : "Record rejection"}
+              {preview.category !== "REJECTED" ? "Save assessment" : "Record rejection"}
             </Button>
           </div>
         </aside>
