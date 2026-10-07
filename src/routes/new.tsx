@@ -279,6 +279,11 @@ function NewAssessment() {
                     />
                   </Field>
                 </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Countries default to N/A until confirmed. Select the appropriate country once the
+                  information is available — geographic consistency is scored as a 2.0 baseline until
+                  both countries are confirmed.
+                </p>
 
                 {industryGate.rejected && (
                   <div className="mt-4 flex items-start gap-3 rounded-lg border border-risk-red/45 bg-risk-red/10 px-4 py-3 text-sm text-risk-red">
