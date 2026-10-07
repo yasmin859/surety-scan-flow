@@ -131,8 +131,8 @@ const emptyMerchant: Merchant = {
   name: "",
   merchant_email: "",
   merchant_website: "",
-  merchant_country: "United Kingdom",
-  operating_country: "United Kingdom",
+  merchant_country: "N/A",
+  operating_country: "N/A",
 
   industry: "Clothes and fashion accessories",
   email_domain_type: "Verified corporate domain",

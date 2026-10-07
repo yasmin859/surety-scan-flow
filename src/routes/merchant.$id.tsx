@@ -759,7 +759,14 @@ function MerchantDetail() {
                 <Row label="Operating country" value={m.operating_country} />
                 <Row
                   label="Geographic consistency"
-                  value={m.merchant_country === m.operating_country ? "Aligned (1.0)" : "Mismatch (2.0)"}
+                  value={
+                    m.merchant_country.trim().toUpperCase() === "N/A" ||
+                    m.operating_country.trim().toUpperCase() === "N/A"
+                      ? "Not confirmed (2.0 baseline)"
+                      : m.merchant_country === m.operating_country
+                        ? "Aligned (1.0)"
+                        : "Mismatch (2.0)"
+                  }
                 />
                 <Row label="Email" value={m.merchant_email || "—"} />
                 <Row label="Website" value={m.merchant_website || "—"} />
@@ -807,12 +814,18 @@ function MerchantDetail() {
                     geographic_consistency: {
                       ubo_country: m.merchant_country,
                       operating_country: m.operating_country,
-                      match: m.merchant_country === m.operating_country,
+                      match:
+                        m.merchant_country.trim().toUpperCase() !== "N/A" &&
+                        m.operating_country.trim().toUpperCase() !== "N/A" &&
+                        m.merchant_country === m.operating_country,
                       score: assessment.scores.merchant_country.score,
                       rationale:
-                        m.merchant_country === m.operating_country
-                          ? "UBO and Operations are in the same jurisdiction (Consistent)."
-                          : `UBO and Operations are in different jurisdictions. Complexity score set to 2.0 (Low Risk).`,
+                        m.merchant_country.trim().toUpperCase() === "N/A" ||
+                        m.operating_country.trim().toUpperCase() === "N/A"
+                          ? "Country information not yet confirmed (N/A). Baseline complexity score set to 2.0 pending confirmation."
+                          : m.merchant_country === m.operating_country
+                            ? "UBO and Operations are in the same jurisdiction (Consistent)."
+                            : `UBO and Operations are in different jurisdictions. Complexity score set to 2.0 (Low Risk).`,
                     },
                     scores: Object.fromEntries(
                       Object.entries(assessment.scores).map(([k, v]) => [k, v.score]),
