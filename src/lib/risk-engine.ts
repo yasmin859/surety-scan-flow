@@ -235,6 +235,7 @@ export function nextAssessmentLabel(history: AssessmentEntry[]): string {
 
 /** Country list for dropdowns. Country risk is no longer tied to nationality. */
 export const COUNTRIES = [
+  "N/A",
   "Australia",
   "Austria",
   "Belgium",
@@ -457,6 +458,20 @@ export function checkIndustry(industry: string): { rejected: boolean; reason?: s
 /* ------------------------------------------------------------------ */
 
 function scoreGeographicConsistency(m: Merchant): ComponentScore {
+  const na = (c: string) => c.trim().toUpperCase() === "N/A";
+  const unconfirmed = na(m.merchant_country) || na(m.operating_country);
+  if (unconfirmed) {
+    return {
+      score: 2,
+      lines: [
+        {
+          label:
+            "Country information not yet confirmed (N/A). Baseline complexity score set to 2.0 pending confirmation.",
+          value: 2,
+        },
+      ],
+    };
+  }
   const matched = m.merchant_country === m.operating_country;
   if (matched) {
     return {
