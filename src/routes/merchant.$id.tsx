@@ -753,7 +753,13 @@ function MerchantDetail() {
           <aside className="space-y-6 lg:sticky lg:top-8 lg:h-fit">
             <section className="panel p-6">
               <p className="label-caps">Legitimacy</p>
-              <p className="mt-1 text-sm font-semibold text-risk-low">{r.legitimacy_status}</p>
+              <p
+                className={`mt-1 text-sm font-semibold ${
+                  r.legitimacy_status.startsWith("PENDING") ? "text-risk-medium" : "text-risk-low"
+                }`}
+              >
+                {r.legitimacy_status}
+              </p>
               <div className="mt-4">
                 <Row label="UBO country" value={m.merchant_country} />
                 <Row label="Operating country" value={m.operating_country} />
