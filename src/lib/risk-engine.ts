@@ -429,8 +429,9 @@ export function checkLegitimacy(l: Legitimacy): { passed: boolean; status: strin
     .filter((k) => !l[k])
     .map((k) => labels[k]);
 
+  // Unconfirmed checks no longer block scoring — the section simply shows PENDING.
   return failures.length > 0
-    ? { passed: false, status: "REJECTED - LEGITIMACY FAILURE", failures }
+    ? { passed: true, status: "PENDING - LEGITIMACY CONFIRMATION", failures }
     : { passed: true, status: "PASSED - LEGITIMACY VERIFIED", failures };
 }
 
