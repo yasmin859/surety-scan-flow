@@ -165,7 +165,7 @@ const industryToOption = (name: string) => {
 function NewAssessment() {
   const navigate = useNavigate();
   const [legit, setLegit] = useState<Legitimacy>({
-    website_live: true,
+    website_live: false,
   });
   const [m, setM] = useState<Merchant>(emptyMerchant);
 
@@ -187,8 +187,8 @@ function NewAssessment() {
       toast.error("Merchant name is required");
       return;
     }
-    const assessment = gate.passed ? runAssessment(m) : null;
-    const rejected = !gate.passed || assessment?.category === "REJECTED";
+    const assessment = runAssessment(m);
+    const rejected = assessment.category === "REJECTED";
     const record: MerchantRecord = {
       id: crypto.randomUUID(),
       created_at: new Date().toISOString(),
@@ -198,11 +198,7 @@ function NewAssessment() {
       legitimacy_status: gate.status,
       assessment,
       stage2: null,
-      final_decision: !gate.passed
-        ? "REJECTED - LEGITIMACY FAILURE"
-        : assessment?.category === "REJECTED"
-          ? "REJECTED - NOT ONBOARDED"
-          : null,
+      final_decision: rejected ? "REJECTED - NOT ONBOARDED" : null,
     };
     upsertRecord(record);
     toast.success(rejected ? "Merchant recorded as Rejected" : "Assessment recorded");
