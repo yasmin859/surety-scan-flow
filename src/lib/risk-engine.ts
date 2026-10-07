@@ -322,6 +322,7 @@ export const INDUSTRY_CATALOG: IndustryDef[] = [
   { name: "Luxury items and fine jewellery", risk: 5, status: "allowed" },
   { name: "Art", risk: 5, status: "allowed" },
   { name: "Bulk and raw materials", risk: 3, status: "allowed" },
+  { name: "Multiple physical categories", risk: 3, status: "allowed" },
   // 3. Services
   { name: "Vehicle reservation payments", risk: 4, status: "allowed" },
   { name: "Transport of persons", risk: 3, status: "allowed" },
