@@ -253,6 +253,7 @@ export const COUNTRIES = [
   "France",
   "Germany",
   "Greece",
+  "Hungary",
   "India",
   "Indonesia",
   "Iran",
